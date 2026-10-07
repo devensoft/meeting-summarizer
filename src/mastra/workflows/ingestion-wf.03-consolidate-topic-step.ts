@@ -13,6 +13,7 @@ export const consolidateTopicStep = createStep({
       {
         structuredOutput: {
           schema: z.object({ consolidatedContent: z.string() }),
+          jsonPromptInjection: true,
         },
       },
     );

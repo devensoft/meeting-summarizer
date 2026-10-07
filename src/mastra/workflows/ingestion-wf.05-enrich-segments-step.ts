@@ -13,6 +13,7 @@ export const enrichSegmentsStep = createStep({
       {
         structuredOutput: {
           schema: z.object({ enrichedSegments: z.array(segmentSchema) }),
+          jsonPromptInjection: true,
         },
       },
     );

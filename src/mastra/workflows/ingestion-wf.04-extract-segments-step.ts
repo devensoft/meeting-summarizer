@@ -13,6 +13,7 @@ export const extractSegmentsStep = createStep({
       {
         structuredOutput: {
           schema: z.object({ segments: z.array(segmentSchema) }),
+          jsonPromptInjection: true,
         },
       },
     );

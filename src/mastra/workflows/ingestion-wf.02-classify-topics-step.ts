@@ -17,6 +17,7 @@ export const classifyTopicsStep = createStep({
       {
         structuredOutput: {
           schema: z.object({ topics: z.array(z.string()) }),
+          jsonPromptInjection: true,
         },
       },
     );

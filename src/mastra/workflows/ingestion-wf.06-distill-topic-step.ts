@@ -14,6 +14,7 @@ export const distillTopicStep = createStep({
       {
         structuredOutput: {
           schema: z.object({ fileName: z.string(), content: z.string() }),
+          jsonPromptInjection: true,
         },
       },
     );
