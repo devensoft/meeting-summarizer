@@ -9,7 +9,8 @@
   "scripts": {
     "dev": "mastra dev",
     "build": "mastra build",
-    "start": "mastra start"
+    "start": "mastra start",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@mastra/core": "1.74.0"

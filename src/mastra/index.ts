@@ -1,3 +1,11 @@
-import { Mastra } from '@mastra/core/mastra';
+import { meetingMaster } from './agents/meeting-master-agent';
+import { ingestionWorkflow } from './workflows/ingestion-workflow';
+import { Mastra } from '@mastra/core';
 
-export const mastra = new Mastra({});
+
+// Export the initialized Mastra application bundle
+export const mastra = new Mastra({
+  agents: { zaiAgent: meetingMaster },
+  workflows: { ingestionWorkflow },
+});
+
