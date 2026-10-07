@@ -1,5 +1,7 @@
 {
     "chat.tools.terminal.autoApprove": {
-        "bun": true
+        "bun": true,
+        "ForEach-Object": true,
+        "Move-Item": true
     }
 }
