@@ -2,7 +2,7 @@ import { mkdir, stat, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { createStep } from '@mastra/core/workflows';
 import { segmentCreatedSchema, segmentFileSchema } from './ingestion-wf.schemas';
-import { resolveWithinDirectory } from '../../common/utils';
+import { resolveProjectRoot, resolveWithinDirectory } from '../../common/utils';
 import { readTranscriptStep } from './ingestion-wf.01-read-transcript-step';
 
 export const writeSegmentFileStep = createStep({
@@ -12,7 +12,8 @@ export const writeSegmentFileStep = createStep({
   outputSchema: segmentCreatedSchema,
   execute: async ({ inputData, getStepResult }) => {
     const meetingDirectoryName = getStepResult(readTranscriptStep).meetingDirectoryName;
-    const meetingsDirectory = path.resolve(process.cwd(), '.workspace', 'meetings');
+    const projectRoot = resolveProjectRoot(process.cwd());
+    const meetingsDirectory = path.resolve(projectRoot, '.workspace', 'meetings');
     const outputDirectory = resolveWithinDirectory(meetingsDirectory, meetingDirectoryName);
     const outputFilePath = resolveWithinDirectory(outputDirectory, path.basename(inputData.filePath));
     await mkdir(outputDirectory, { recursive: true });
@@ -20,7 +21,7 @@ export const writeSegmentFileStep = createStep({
     const { size } = await stat(outputFilePath);
     return {
       topic: inputData.topic,
-      filePath: path.relative(process.cwd(), outputFilePath),
+      filePath: path.relative(projectRoot, outputFilePath),
       fileSize: size,
       isSegment: inputData.isSegment,
     };

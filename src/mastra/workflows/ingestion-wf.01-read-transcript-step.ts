@@ -2,7 +2,7 @@ import { readFile, mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { createStep } from '@mastra/core/workflows';
 import { inputFileSchema, transcriptSchema } from './ingestion-wf.schemas';
-import { resolveFromRoot, resolveWithinDirectory } from '../../common/utils';
+import { resolveFromRoot, resolveProjectRoot, resolveWithinDirectory } from '../../common/utils';
 
 export const readTranscriptStep = createStep({
   id: 'read-transcript',
@@ -10,7 +10,8 @@ export const readTranscriptStep = createStep({
   inputSchema: inputFileSchema,
   outputSchema: transcriptSchema,
   execute: async ({ inputData: { filePath } }) => {
-    const inputFilePath = resolveFromRoot(process.cwd(), filePath);
+    const projectRoot = resolveProjectRoot(process.cwd());
+    const inputFilePath = resolveFromRoot(projectRoot, filePath);
     const file = new File([await readFile(inputFilePath)], path.basename(inputFilePath), {
       type: 'text/plain',
     });
@@ -19,7 +20,7 @@ export const readTranscriptStep = createStep({
       throw new Error('Invalid file type. Only plain text files are supported.');
     }
 
-    const workspaceDirectory = path.resolve(process.cwd(), '.workspace', 'meetings');
+    const workspaceDirectory = path.resolve(projectRoot, '.workspace', 'meetings');
     const outputDirName = `${path.basename(inputFilePath, path.extname(inputFilePath))}-${Date.now()}`;
     const meetingDirectory = resolveWithinDirectory(workspaceDirectory, outputDirName);
     const meetingFilePath = path.resolve(meetingDirectory, path.basename(inputFilePath));

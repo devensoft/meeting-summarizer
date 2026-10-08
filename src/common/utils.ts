@@ -1,4 +1,22 @@
+import { existsSync } from 'node:fs';
 import path from 'node:path';
+
+export function resolveProjectRoot(startDirectory: string) {
+  let currentDirectory = path.resolve(startDirectory);
+
+  while (true) {
+    if (existsSync(path.join(currentDirectory, 'package.json'))) {
+      return currentDirectory;
+    }
+
+    const parentDirectory = path.dirname(currentDirectory);
+    if (parentDirectory === currentDirectory) {
+      throw new Error(`Could not find a package.json above ${startDirectory}.`);
+    }
+
+    currentDirectory = parentDirectory;
+  }
+}
 
 export function resolveFromRoot(rootDirectory: string, inputPath: string) {
   const trimmedPath = inputPath.trim();
