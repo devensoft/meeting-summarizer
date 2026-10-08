@@ -24,6 +24,7 @@ export const distillTopicStep = createStep({
       topic: inputData.topic,
       filePath: path.join('src', 'mastra', 'public', 'segments', `${fileName}.md`),
       content: response.object.content,
+      isSegment: inputData.isSegment,
     };
   },
 });

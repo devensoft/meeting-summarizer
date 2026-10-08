@@ -6,12 +6,13 @@ import { extractSegmentsStep } from './ingestion-wf.04-extract-segments-step';
 import { enrichSegmentsStep } from './ingestion-wf.05-enrich-segments-step';
 import { distillTopicStep } from './ingestion-wf.06-distill-topic-step';
 import { writeSegmentFileStep } from './ingestion-wf.07-write-segment-file-step';
-import { inputFileSchema, segmentFileSchema, topicContextSchema, topicResultSchema } from './ingestion-wf.schemas';
+import { collectSegmentsStep } from './ingestion-wf.08-collect-segments-step';
+import { inputFileSchema, segmentCreatedSchema, topicContextSchema, topicResultSchema } from './ingestion-wf.schemas';
 
 const perTopicSubworkflow = createWorkflow({
   id: 'per-topic-subworkflow',
   inputSchema: topicContextSchema,
-  outputSchema: segmentFileSchema,
+  outputSchema: segmentCreatedSchema,
 })
   .then(consolidateTopicStep)
   .then(extractSegmentsStep)
@@ -23,25 +24,26 @@ const perTopicSubworkflow = createWorkflow({
 const singleTopicPath = createWorkflow({
   id: 'single-topic-path',
   inputSchema: topicResultSchema,
-  outputSchema: segmentFileSchema.array(),
+  outputSchema: segmentCreatedSchema,
 })
   .map(async ({ inputData }) => ({
     transcriptContent: inputData.transcriptContent,
     topic: inputData.singleTheme!,
+    isSegment: false,
   }))
   .then(perTopicSubworkflow)
-  .map(async ({ inputData }) => [inputData])
   .commit();
 
 const multipleTopicsPath = createWorkflow({
   id: 'multiple-topics-path',
   inputSchema: topicResultSchema,
-  outputSchema: segmentFileSchema.array(),
+  outputSchema: segmentCreatedSchema.array(),
 })
   .map(async ({ inputData }) =>
     inputData.topics.map(topic => ({
       transcriptContent: inputData.transcriptContent,
       topic,
+      isSegment: true,
     })),
   )
   .foreach(perTopicSubworkflow, { concurrency: 4 })
@@ -50,7 +52,7 @@ const multipleTopicsPath = createWorkflow({
 const ingestionWorkflow = createWorkflow({
   id: 'ingestionWorkflow',
   inputSchema: inputFileSchema,
-  outputSchema: segmentFileSchema.array(),
+  outputSchema: segmentCreatedSchema.array(),
 })
   .then(readTranscriptStep)
   .then(classifyTopicsStep)
@@ -58,6 +60,7 @@ const ingestionWorkflow = createWorkflow({
     [async ({ inputData }) => inputData.singleTheme !== null, singleTopicPath],
     [async ({ inputData }) => inputData.singleTheme === null, multipleTopicsPath],
   ])
+  .then(collectSegmentsStep)
   .commit();
 
 export { ingestionWorkflow };

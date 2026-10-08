@@ -16,6 +16,7 @@ export const topicResultSchema = z.object({
 export const topicContextSchema = z.object({
   transcriptContent: z.string(),
   topic: z.string(),
+  isSegment: z.boolean(),
 });
 export const segmentSchema = z.object({
   topic: z.string(),
@@ -25,6 +26,13 @@ export const segmentFileSchema = z.object({
   topic: z.string(),
   filePath: z.string(),
   content: z.string(),
+  isSegment: z.boolean(),
+});
+export const segmentCreatedSchema = z.object({
+  topic: z.string(),
+  filePath: z.string(),
+  fileSize: z.number().int().nonnegative(),
+  isSegment: z.boolean(),
 });
 export const consolidatedTopicSchema = topicContextSchema.extend({
   consolidatedContent: z.string(),
