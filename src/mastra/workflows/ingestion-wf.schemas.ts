@@ -4,6 +4,7 @@ export const inputFileSchema = z.object({
   filePath: z.string().min(1).describe('Path to a plain-text transcript on the Mastra server.'),
 });
 export const transcriptSchema = z.object({
+  meetingDirectoryName: z.string().min(1),
   isValidTranscript: z.boolean(),
   transcriptContent: z.string(),
   meetingType: z.string(),
