@@ -13,11 +13,13 @@ export const topicResultSchema = z.object({
   transcriptContent: z.string(),
   topics: z.array(z.string()),
   singleTheme: z.string().nullable(),
+  meetingDirectoryName: z.string(),
 });
 export const topicContextSchema = z.object({
   transcriptContent: z.string(),
   topic: z.string(),
   isSegment: z.boolean(),
+  meetingDirectoryName: z.string(),
 });
 export const segmentSchema = z.object({
   topic: z.string(),
@@ -28,6 +30,7 @@ export const segmentFileSchema = z.object({
   filePath: z.string(),
   content: z.string(),
   isSegment: z.boolean(),
+  meetingDirectoryName: z.string(),
 });
 export const segmentCreatedSchema = z.object({
   topic: z.string(),

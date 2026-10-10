@@ -3,15 +3,14 @@ import path from 'node:path';
 import { createStep } from '@mastra/core/workflows';
 import { segmentCreatedSchema, segmentFileSchema } from './ingestion-wf.schemas';
 import { resolveProjectRoot, resolveWithinDirectory } from '../../common/utils';
-import { readTranscriptStep } from './ingestion-wf.01-read-transcript-step';
 
 export const writeSegmentFileStep = createStep({
   id: 'write-segment-file',
   description: "Write the distilled topic document to the current meeting's workspace directory.",
   inputSchema: segmentFileSchema,
   outputSchema: segmentCreatedSchema,
-  execute: async ({ inputData, getStepResult }) => {
-    const meetingDirectoryName = getStepResult(readTranscriptStep).meetingDirectoryName;
+  execute: async ({ inputData }) => {
+    const { meetingDirectoryName } = inputData;
     const projectRoot = resolveProjectRoot(process.cwd());
     const meetingsDirectory = path.resolve(projectRoot, '.workspace', 'meetings');
     const outputDirectory = resolveWithinDirectory(meetingsDirectory, meetingDirectoryName);

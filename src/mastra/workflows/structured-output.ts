@@ -1,0 +1,18 @@
+import type { z } from 'zod';
+
+/**
+ * Structured-output options tuned for GLM reasoning models on the z.ai router.
+ *
+ * Native provider JSON mode (`response_format`) is unreliable through this
+ * OpenAI-compatible endpoint, so we use prompt injection. The `instructions`
+ * replace the generated schema dump and must spell out the exact JSON shape:
+ * the models otherwise answer with reasoning prose, or drift into whatever
+ * structure their persona suggests (e.g. the meeting-notes sections).
+ */
+export function jsonOnly<TSchema extends z.ZodType>(schema: TSchema, shapeExample: string) {
+  return {
+    schema,
+    jsonPromptInjection: true as const,
+    instructions: `Your entire reply must be exactly one raw JSON object of this shape: ${shapeExample} Use exactly these keys (case-sensitive) and nothing else. No prose, no markdown, no code fences, no reasoning. Escape newlines inside string values as \\n.`,
+  };
+}

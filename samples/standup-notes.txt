@@ -1,0 +1,7 @@
+WebSync Standup - Monday
+
+Sarah: The API migration is done, we shipped the new endpoints on Friday. Deployment went smoothly.
+Raj: Nice. I'm picking up the search relevance bug next - users report stale results after reindexing.
+Sarah: We should also decide on the caching strategy for the dashboard, Redis vs in-memory.
+Raj: Let's benchmark Redis this week and compare numbers on Thursday.
+Sarah: Agreed. I'll prepare the test dataset for the benchmark by Wednesday.

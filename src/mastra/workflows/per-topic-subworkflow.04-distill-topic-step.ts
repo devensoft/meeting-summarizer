@@ -2,6 +2,7 @@ import path from 'node:path';
 import { z } from 'zod';
 import { createStep } from '@mastra/core/workflows';
 import { enrichedTopicSchema, segmentFileSchema } from './ingestion-wf.schemas';
+import { jsonOnly } from './structured-output';
 
 export const distillTopicStep = createStep({
   id: 'distill-topic',
@@ -9,13 +10,13 @@ export const distillTopicStep = createStep({
   inputSchema: enrichedTopicSchema,
   outputSchema: segmentFileSchema,
   execute: async ({ inputData, mastra }) => {
-    const response = await mastra.getAgent('zaiAgent').generate(
+    const response = await mastra.getAgent('meeting-master').generate(
       `Distill these enriched meeting segments into a clear Markdown document. Return a filesystem-safe short filename without an extension and the final Markdown content.\n\nTopic: ${inputData.topic}\n\nSegments:\n${JSON.stringify(inputData.enrichedSegments)}`,
       {
-        structuredOutput: {
-          schema: z.object({ fileName: z.string(), content: z.string() }),
-          jsonPromptInjection: true,
-        },
+        structuredOutput: jsonOnly(
+          z.object({ fileName: z.string(), content: z.string() }),
+          '{"fileName":"short-kebab-name","content":"full markdown document"}',
+        ),
       },
     );
     const fileName = response.object.fileName.replace(/[^a-zA-Z0-9_-]+/g, '-').replace(/^-|-$/g, '') || 'segment';
@@ -25,6 +26,7 @@ export const distillTopicStep = createStep({
       filePath: path.join('src', 'mastra', 'public', 'segments', `${fileName}.md`),
       content: response.object.content,
       isSegment: inputData.isSegment,
+      meetingDirectoryName: inputData.meetingDirectoryName,
     };
   },
 });

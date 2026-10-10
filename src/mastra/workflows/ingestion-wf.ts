@@ -14,6 +14,7 @@ const singleTopicPath = createWorkflow({
     transcriptContent: inputData.transcriptContent,
     topic: inputData.singleTheme!,
     isSegment: false,
+    meetingDirectoryName: inputData.meetingDirectoryName,
   }))
   .then(perTopicSubworkflow)
   .commit();
@@ -28,6 +29,7 @@ const multipleTopicsPath = createWorkflow({
       transcriptContent: inputData.transcriptContent,
       topic,
       isSegment: true,
+      meetingDirectoryName: inputData.meetingDirectoryName,
     })),
   )
   .foreach(perTopicSubworkflow, { concurrency: 4 })
