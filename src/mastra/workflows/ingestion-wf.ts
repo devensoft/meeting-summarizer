@@ -1,25 +1,9 @@
 import { createWorkflow } from '@mastra/core/workflows';
 import { readTranscriptStep } from './ingestion-wf.01-read-transcript-step';
 import { classifyTopicsStep } from './ingestion-wf.02-classify-topics-step';
-import { consolidateTopicStep } from './ingestion-wf.03-consolidate-topic-step';
-import { extractSegmentsStep } from './ingestion-wf.04-extract-segments-step';
-import { enrichSegmentsStep } from './ingestion-wf.05-enrich-segments-step';
-import { distillTopicStep } from './ingestion-wf.06-distill-topic-step';
-import { writeSegmentFileStep } from './ingestion-wf.07-write-segment-file-step';
 import { collectSegmentsStep } from './ingestion-wf.08-collect-segments-step';
-import { inputFileSchema, segmentCreatedSchema, topicContextSchema, topicResultSchema } from './ingestion-wf.schemas';
-
-const perTopicSubworkflow = createWorkflow({
-  id: 'per-topic-subworkflow',
-  inputSchema: topicContextSchema,
-  outputSchema: segmentCreatedSchema,
-})
-  .then(consolidateTopicStep)
-  .then(extractSegmentsStep)
-  .then(enrichSegmentsStep)
-  .then(distillTopicStep)
-  .then(writeSegmentFileStep)
-  .commit();
+import { perTopicSubworkflow } from './per-topic-subworkflow';
+import { inputFileSchema, segmentCreatedSchema, topicResultSchema } from './ingestion-wf.schemas';
 
 const singleTopicPath = createWorkflow({
   id: 'single-topic-path',
