@@ -3,11 +3,13 @@ dist
 .mastra
 .env
 .env.*
+!.env.example
 *.db
 *.db-*
 *.duckdb
 *.duckdb.wal
 .workspace
 _ReSharper.Caches
+.vscode
 .git
 .idea

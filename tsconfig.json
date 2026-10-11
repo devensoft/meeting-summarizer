@@ -4,7 +4,7 @@
     "module": "ES2022",
     "moduleResolution": "bundler",
     "esModuleInterop": true,
-    "types": ["node"],
+    "types": ["bun"],
     "forceConsistentCasingInFileNames": true,
     "strict": true,
     "skipLibCheck": true,
