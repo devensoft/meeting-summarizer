@@ -1,19 +1,28 @@
+import { mkdirSync } from 'node:fs';
+import path from 'node:path';
 import { Mastra } from '@mastra/core/mastra';
 import { MastraCompositeStore } from '@mastra/core/storage';
 import { LibSQLStore } from '@mastra/libsql';
 import { DuckDBStore } from '@mastra/duckdb';
 import { Observability, MastraStorageExporter } from '@mastra/observability';
 import { ingestionWorkflow } from './workflows/ingestion-wf';
+import { resolveProjectRoot } from '../common/utils';
+
+// Data files must live OUTSIDE src/mastra/public (that directory is copied into
+// the build output and served statically). Anchor to the project root so the
+// location is independent of the terminal the server was started from.
+const dataDir = path.join(resolveProjectRoot(process.cwd()), '.mastra', 'data');
+mkdirSync(dataDir, { recursive: true });
 
 // Composite storage: LibSQL for app data, DuckDB for the observability domain (traces + metrics aggregation)
 const storage = new MastraCompositeStore({
   id: 'composite-storage',
   default: new LibSQLStore({
     id: 'mastra-storage',
-    url: 'file:./mastra.db',
+    url: `file:${path.join(dataDir, 'mastra.db').replace(/\\/g, '/')}`,
   }),
   domains: {
-    observability: await new DuckDBStore().getStore('observability'),
+    observability: await new DuckDBStore({ path: path.join(dataDir, 'mastra.duckdb') }).getStore('observability'),
   },
 });
 
