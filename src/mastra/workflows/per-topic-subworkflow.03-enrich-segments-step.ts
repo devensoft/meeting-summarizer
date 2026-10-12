@@ -1,7 +1,10 @@
 import { createStep } from '@mastra/core/workflows';
 import { enrichedTopicSchema, extractedTopicSchema, segmentSchema } from './ingestion-wf.schemas';
 import { z } from 'zod';
+import { loadPrompt, renderTemplate } from '../../common/prompts';
 import { jsonOnly } from './structured-output';
+
+const enrichSegmentsPrompt = loadPrompt(import.meta.url, 'per-topic-subworkflow.03-enrich-segments-step.prompt.md');
 
 export const enrichSegmentsStep = createStep({
   id: 'enrich-segments',
@@ -10,7 +13,7 @@ export const enrichSegmentsStep = createStep({
   outputSchema: enrichedTopicSchema,
   execute: async ({ inputData, mastra }) => {
     const response = await mastra.getAgent('meeting-master').generate(
-      `Enrich these meeting segments without inventing facts. Preserve the topic and content while improving clarity and context.\n\nSegments:\n${JSON.stringify(inputData.segments)}`,
+      renderTemplate(enrichSegmentsPrompt, { segments: JSON.stringify(inputData.segments) }),
       {
         structuredOutput: jsonOnly(
           z.object({ enrichedSegments: z.array(segmentSchema) }),

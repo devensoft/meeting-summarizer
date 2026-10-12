@@ -39,6 +39,7 @@ Facts that aren't visible from any single file:
 - **The schemas file is the contract.** Each step's `inputSchema` is the previous step's `outputSchema`; the chain reads top-to-bottom in `ingestion-wf.schemas.ts` (`transcriptSchema` → `topicResultSchema` → … → `segmentCreatedSchema`). Change a schema there and every step it feeds.
 - **Branch output is keyed by branch id.** `ingestion-wf` branches on single-vs-multiple topics; the `.branch()` step emits an object keyed by path id (`single-topic-path` / `multiple-topics-path`), flattened by `08-collect-segments-step`. A new branch needs a matching key in the collector.
 - **The agent is file-based.** The directory name under `agents/` is the registry key; `instructions.md` is the system prompt. Model/provider live in `config.ts` as a provider-id string.
+- **Workflow step prompts live in sibling `.prompt.md` files.** Each workflow step's prompt is a file stacked next to its calling module (e.g. `ingestion-wf.02-classify-topics-step.prompt.md`), loaded once at module import with `loadPrompt(import.meta.url, '<file>.prompt.md')` from `src/common/prompts.ts` and filled per call with `renderTemplate` (`{{variable}}` placeholders; missing or malformed placeholders throw). `mastra build` collapses `import.meta.url` to the bundle chunk's URL, so the loader falls back to a search under `src/mastra/` — a prompt file must stay somewhere in that tree to be findable in a built server.
 
 ## Filesystem rules
 

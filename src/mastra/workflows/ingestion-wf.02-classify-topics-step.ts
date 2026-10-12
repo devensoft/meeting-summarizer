@@ -2,7 +2,10 @@ import { z } from 'zod';
 import { createStep } from '@mastra/core/workflows';
 import { topicResultSchema, transcriptSchema } from './ingestion-wf.schemas';
 import { readTranscriptStep } from './ingestion-wf.01-read-transcript-step';
+import { loadPrompt, renderTemplate } from '../../common/prompts';
 import { jsonOnly } from './structured-output';
+
+const classifyTopicsPrompt = loadPrompt(import.meta.url, 'ingestion-wf.02-classify-topics-step.prompt.md');
 
 export const classifyTopicsStep = createStep({
   id: 'classify-topics',
@@ -17,7 +20,7 @@ export const classifyTopicsStep = createStep({
     const { meetingDirectoryName } = getStepResult(readTranscriptStep);
 
     const response = await mastra.getAgent('meeting-master').generate(
-      `The provided text is a transcript of a ${meetingType} meeting. Identify each distinct topic, including topics discussed in multiple non-contiguous sections. Return each unique topic once as a concise label.\n\nTranscript:\n${transcriptContent}`,
+      renderTemplate(classifyTopicsPrompt, { meetingType, transcriptContent }),
       {
         structuredOutput: jsonOnly(
           z.object({ topics: z.array(z.string()) }),

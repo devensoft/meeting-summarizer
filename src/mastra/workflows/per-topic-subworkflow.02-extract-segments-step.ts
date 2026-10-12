@@ -1,7 +1,10 @@
 import { createStep } from '@mastra/core/workflows';
 import { extractedTopicSchema, consolidatedTopicSchema, segmentSchema } from './ingestion-wf.schemas';
 import { z } from 'zod';
+import { loadPrompt, renderTemplate } from '../../common/prompts';
 import { jsonOnly } from './structured-output';
+
+const extractSegmentsPrompt = loadPrompt(import.meta.url, 'per-topic-subworkflow.02-extract-segments-step.prompt.md');
 
 export const extractSegmentsStep = createStep({
   id: 'extract-segments',
@@ -10,7 +13,10 @@ export const extractSegmentsStep = createStep({
   outputSchema: extractedTopicSchema,
   execute: async ({ inputData, mastra }) => {
     const response = await mastra.getAgent('meeting-master').generate(
-      `Extract the meaningful segments from this consolidated material. Return concise, non-overlapping segments with the topic label and supporting content.\n\nTopic: ${inputData.topic}\n\nMaterial:\n${inputData.consolidatedContent}`,
+      renderTemplate(extractSegmentsPrompt, {
+        topic: inputData.topic,
+        consolidatedContent: inputData.consolidatedContent,
+      }),
       {
         structuredOutput: jsonOnly(
           z.object({ segments: z.array(segmentSchema) }),

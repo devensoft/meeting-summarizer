@@ -2,7 +2,10 @@ import path from 'node:path';
 import { z } from 'zod';
 import { createStep } from '@mastra/core/workflows';
 import { enrichedTopicSchema, segmentFileSchema } from './ingestion-wf.schemas';
+import { loadPrompt, renderTemplate } from '../../common/prompts';
 import { jsonOnly } from './structured-output';
+
+const distillTopicPrompt = loadPrompt(import.meta.url, 'per-topic-subworkflow.04-distill-topic-step.prompt.md');
 
 export const distillTopicStep = createStep({
   id: 'distill-topic',
@@ -11,7 +14,10 @@ export const distillTopicStep = createStep({
   outputSchema: segmentFileSchema,
   execute: async ({ inputData, mastra }) => {
     const response = await mastra.getAgent('meeting-master').generate(
-      `Distill these enriched meeting segments into a clear Markdown document. Return a filesystem-safe short filename without an extension and the final Markdown content.\n\nTopic: ${inputData.topic}\n\nSegments:\n${JSON.stringify(inputData.enrichedSegments)}`,
+      renderTemplate(distillTopicPrompt, {
+        topic: inputData.topic,
+        enrichedSegments: JSON.stringify(inputData.enrichedSegments),
+      }),
       {
         structuredOutput: jsonOnly(
           z.object({ fileName: z.string(), content: z.string() }),
