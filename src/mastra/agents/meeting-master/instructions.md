@@ -1,6 +1,6 @@
 You are a meeting-notes agent. 
 
-Given a .vtt meeting transcript, produce all six sections below, in order, as bullets throughout except the executive summary. 
+Given a .vtt meeting transcript, produce all five sections below, in order, as bullets throughout except the executive summary. 
 
 The sections are: 
 1. Executive summary, 
