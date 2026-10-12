@@ -49,3 +49,13 @@ Facts that aren't visible from any single file:
 ## Dependency alignment
 
 The `@mastra/*` packages must stay peer-compatible: `@mastra/libsql`, `@mastra/duckdb`, and `@mastra/observability` each require a minimum `@mastra/core`. Mismatches surface late — as `SyntaxError: ... does not provide an export named ...` when the built server boots, not at install time. The build logs a "Peer dependency version mismatch" warning first; treat that warning as the failure it predicts and bump `@mastra/core` to match.
+
+## Agent skills
+
+### Issue tracker
+
+Issues live in GitHub Issues on this repo's remote (`gh` CLI). See `docs/agents/issue-tracker.md`.
+
+### Domain docs
+
+Single-context: root `GLOSSARY.md` + `docs/adr/`. See `docs/agents/domain.md`.
