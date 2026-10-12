@@ -16,6 +16,10 @@ All commands live in `package.json` — it is the source of truth for scripts. T
 - `bun run start` chains `mastra build && mastra start`; the server alone fails without a fresh build. Runtime smoke test: server on `:4111`, `GET /health` returns `200 {"success":true}`.
 - `mastra dev` hot-reloads agent system prompts (see file-based agents below), `mastra start` does not.
 
+## Git conventions
+
+- **Always merge with a merge commit**: use `git merge --no-ff` (never fast-forward or rebase) when merging branches into this one.
+
 ## Architecture
 
 Two Mastra workflows do all the work, plus one file-based agent that exposes them:
