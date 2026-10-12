@@ -49,26 +49,34 @@ export function renderTemplate(template: string, variables: Record<string, strin
   return rendered;
 }
 
-const promptCache = new Map<string, string>();
+const promptPathCache = new Map<string, string>();
 
-/** Loads a prompt file stacked next to the calling module, once per process.
- * Pass the calling module's `import.meta.url` so the sibling is resolved
- * relative to it. In a `mastra build` bundle every module shares the chunk's
+/** Resolves a prompt file stacked next to the calling module and returns a
+ * zero-arg getter that re-reads its content from disk on every call, so edits
+ * to the `.prompt.md` file apply on the next render without a restart. Pass
+ * the calling module's `import.meta.url` so the sibling is resolved relative
+ * to it. Resolution happens once per caller/file pair and is cached; an
+ * initial read makes a missing or unreadable file fail at boot rather than on
+ * the first render. In a `mastra build` bundle every module shares the chunk's
  * URL inside `.mastra/output`, so resolution walks up from the caller's
  * directory to the nearest ancestor containing `src/mastra` and searches that
  * tree. CRLF is normalized to LF and trailing whitespace stripped so the
  * file's line-ending style never leaks into the prompt. */
-export function loadPrompt(callerModuleUrl: string, promptFileName: string): string {
+export function loadPrompt(callerModuleUrl: string, promptFileName: string): () => string {
   const cacheKey = `${callerModuleUrl}::${promptFileName}`;
-  const cached = promptCache.get(cacheKey);
-  if (cached !== undefined) {
-    return cached;
+  let promptPath = promptPathCache.get(cacheKey);
+  if (promptPath === undefined) {
+    promptPath = resolvePromptPath(callerModuleUrl, promptFileName);
+    readPromptFile(promptPath);
+    promptPathCache.set(cacheKey, promptPath);
   }
+  const resolvedPath = promptPath;
 
-  const promptPath = resolvePromptPath(callerModuleUrl, promptFileName);
-  const content = readFileSync(promptPath, 'utf8').replace(/\r\n/g, '\n').replace(/\s+$/, '');
-  promptCache.set(cacheKey, content);
-  return content;
+  return () => readPromptFile(resolvedPath);
+}
+
+function readPromptFile(promptPath: string): string {
+  return readFileSync(promptPath, 'utf8').replace(/\r\n/g, '\n').replace(/\s+$/, '');
 }
 
 function resolvePromptPath(callerModuleUrl: string, promptFileName: string): string {

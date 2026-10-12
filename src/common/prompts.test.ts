@@ -61,22 +61,24 @@ describe('loadPrompt', () => {
   it('loads the file stacked next to the calling module', () => {
     writeFileSync(path.join(tempRoot, 'meeting-step.prompt.md'), 'Say {{greeting}} now.', 'utf8');
 
-    expect(loadPrompt(callerUrl, 'meeting-step.prompt.md')).toBe('Say {{greeting}} now.');
+    expect(loadPrompt(callerUrl, 'meeting-step.prompt.md')()).toBe('Say {{greeting}} now.');
   });
 
   it('normalizes CRLF line endings and strips the trailing newline', () => {
     writeFileSync(path.join(tempRoot, 'meeting-step.prompt.md'), 'First\r\nSecond: {{x}}\r\n', 'utf8');
 
-    expect(loadPrompt(callerUrl, 'meeting-step.prompt.md')).toBe('First\nSecond: {{x}}');
+    expect(loadPrompt(callerUrl, 'meeting-step.prompt.md')()).toBe('First\nSecond: {{x}}');
   });
 
-  it('reads from disk only once per file', () => {
+  it('re-reads the file on every call so edits apply without reloading the module', () => {
     const promptPath = path.join(tempRoot, 'meeting-step.prompt.md');
-    writeFileSync(promptPath, 'Cached content.', 'utf8');
+    writeFileSync(promptPath, 'First draft.', 'utf8');
+    const getPrompt = loadPrompt(callerUrl, 'meeting-step.prompt.md');
 
-    expect(loadPrompt(callerUrl, 'meeting-step.prompt.md')).toBe('Cached content.');
-    rmSync(promptPath);
-    expect(loadPrompt(callerUrl, 'meeting-step.prompt.md')).toBe('Cached content.');
+    expect(getPrompt()).toBe('First draft.');
+
+    writeFileSync(promptPath, 'Second draft.', 'utf8');
+    expect(getPrompt()).toBe('Second draft.');
   });
 
   it('resolves through the src/mastra tree when no sibling exists, anchoring on the caller location', () => {
@@ -88,7 +90,7 @@ describe('loadPrompt', () => {
     const buildCallerUrl = pathToFileURL(path.join(buildDir, 'mastra.mjs')).href;
     writeFileSync(path.join(mastraDir, 'target.prompt.md'), 'Tree content.', 'utf8');
 
-    expect(loadPrompt(buildCallerUrl, 'target.prompt.md')).toBe('Tree content.');
+    expect(loadPrompt(buildCallerUrl, 'target.prompt.md')()).toBe('Tree content.');
   });
 
   it('throws with a clear message when the file exists nowhere', () => {

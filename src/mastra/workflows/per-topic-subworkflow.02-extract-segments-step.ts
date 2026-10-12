@@ -13,7 +13,7 @@ export const extractSegmentsStep = createStep({
   outputSchema: extractedTopicSchema,
   execute: async ({ inputData, mastra }) => {
     const response = await mastra.getAgent('meeting-master').generate(
-      renderTemplate(extractSegmentsPrompt, {
+      renderTemplate(extractSegmentsPrompt(), {
         topic: inputData.topic,
         consolidatedContent: inputData.consolidatedContent,
       }),

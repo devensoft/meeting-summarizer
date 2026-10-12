@@ -20,7 +20,7 @@ export const classifyTopicsStep = createStep({
     const { meetingDirectoryName } = getStepResult(readTranscriptStep);
 
     const response = await mastra.getAgent('meeting-master').generate(
-      renderTemplate(classifyTopicsPrompt, { meetingType, transcriptContent }),
+      renderTemplate(classifyTopicsPrompt(), { meetingType, transcriptContent }),
       {
         structuredOutput: jsonOnly(
           z.object({ topics: z.array(z.string()) }),

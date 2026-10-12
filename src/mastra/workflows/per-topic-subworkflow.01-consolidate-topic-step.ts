@@ -13,7 +13,7 @@ export const consolidateTopicStep = createStep({
   outputSchema: consolidatedTopicSchema,
   execute: async ({ inputData, mastra }) => {
     const response = await mastra.getAgent('meeting-master').generate(
-      renderTemplate(consolidateTopicPrompt, {
+      renderTemplate(consolidateTopicPrompt(), {
         topic: inputData.topic,
         transcriptContent: inputData.transcriptContent,
       }),

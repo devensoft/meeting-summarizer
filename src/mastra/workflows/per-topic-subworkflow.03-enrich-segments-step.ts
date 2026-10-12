@@ -13,7 +13,7 @@ export const enrichSegmentsStep = createStep({
   outputSchema: enrichedTopicSchema,
   execute: async ({ inputData, mastra }) => {
     const response = await mastra.getAgent('meeting-master').generate(
-      renderTemplate(enrichSegmentsPrompt, { segments: JSON.stringify(inputData.segments) }),
+      renderTemplate(enrichSegmentsPrompt(), { segments: JSON.stringify(inputData.segments) }),
       {
         structuredOutput: jsonOnly(
           z.object({ enrichedSegments: z.array(segmentSchema) }),

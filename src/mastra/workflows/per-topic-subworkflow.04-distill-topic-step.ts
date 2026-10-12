@@ -14,7 +14,7 @@ export const distillTopicStep = createStep({
   outputSchema: segmentFileSchema,
   execute: async ({ inputData, mastra }) => {
     const response = await mastra.getAgent('meeting-master').generate(
-      renderTemplate(distillTopicPrompt, {
+      renderTemplate(distillTopicPrompt(), {
         topic: inputData.topic,
         enrichedSegments: JSON.stringify(inputData.enrichedSegments),
       }),
