@@ -64,15 +64,14 @@ const promptPathCache = new Map<string, string>();
  * file's line-ending style never leaks into the prompt. */
 export function loadPrompt(callerModuleUrl: string, promptFileName: string): () => string {
   const cacheKey = `${callerModuleUrl}::${promptFileName}`;
-  let promptPath = promptPathCache.get(cacheKey);
-  if (promptPath === undefined) {
-    promptPath = resolvePromptPath(callerModuleUrl, promptFileName);
+  const cachedPath = promptPathCache.get(cacheKey);
+  const promptPath = cachedPath ?? resolvePromptPath(callerModuleUrl, promptFileName);
+  if (cachedPath === undefined) {
     readPromptFile(promptPath);
     promptPathCache.set(cacheKey, promptPath);
   }
-  const resolvedPath = promptPath;
 
-  return () => readPromptFile(resolvedPath);
+  return () => readPromptFile(promptPath);
 }
 
 function readPromptFile(promptPath: string): string {
