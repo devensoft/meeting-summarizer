@@ -9,7 +9,7 @@
     "node": ">=22.13.0"
   },
   "scripts": {
-    "dev": "mastra dev",
+    "dev": "mastra dev --request-context-presets ./presets.json",
     "build": "mastra build",
     "start": "mastra build && mastra start",
     "test": "bun test",

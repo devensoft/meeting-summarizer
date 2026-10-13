@@ -11,7 +11,7 @@ export const consolidateTopicStep = createStep({
   description: 'Consolidate all transcript passages related to one topic.',
   inputSchema: topicContextSchema,
   outputSchema: consolidatedTopicSchema,
-  execute: async ({ inputData, mastra }) => {
+  execute: async ({ inputData, mastra, requestContext }) => {
     const response = await mastra.getAgent('meeting-master').generate(
       renderTemplate(consolidateTopicPrompt(), {
         topic: inputData.topic,
@@ -22,6 +22,7 @@ export const consolidateTopicStep = createStep({
           z.object({ consolidatedContent: z.string() }),
           '{"consolidatedContent":"consolidated passages text"}',
         ),
+        requestContext,
       },
     );
 

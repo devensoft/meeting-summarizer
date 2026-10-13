@@ -11,7 +11,7 @@ export const enrichSegmentsStep = createStep({
   description: 'Enrich each extracted segment with its relevant context.',
   inputSchema: extractedTopicSchema,
   outputSchema: enrichedTopicSchema,
-  execute: async ({ inputData, mastra }) => {
+  execute: async ({ inputData, mastra, requestContext }) => {
     const response = await mastra.getAgent('meeting-master').generate(
       renderTemplate(enrichSegmentsPrompt(), { segments: JSON.stringify(inputData.segments) }),
       {
@@ -19,6 +19,7 @@ export const enrichSegmentsStep = createStep({
           z.object({ enrichedSegments: z.array(segmentSchema) }),
           '{"enrichedSegments":[{"topic":"segment topic","content":"enriched segment text"}]}',
         ),
+        requestContext,
       },
     );
 

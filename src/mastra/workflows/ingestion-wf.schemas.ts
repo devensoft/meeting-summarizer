@@ -2,6 +2,12 @@ import { z } from 'zod';
 
 export const inputFileSchema = z.object({
   filePath: z.string().min(1).describe('Path to a plain-text transcript on the Mastra server.'),
+  seriesName: z
+    .string()
+    .optional()
+    .describe(
+      'Meeting series the transcript belongs to (e.g. "greenfield-design-sync"). Optional: when present it names the run output directory; matching context is seeded separately via a request-context preset.',
+    ),
 });
 export const transcriptSchema = z.object({
   meetingDirectoryName: z.string().min(1),
@@ -12,7 +18,8 @@ export const transcriptSchema = z.object({
 export const topicResultSchema = z.object({
   transcriptContent: z.string(),
   topics: z.array(z.string()),
-  singleTheme: z.string().nullable(),
+  omittedTopics: z.array(z.string()),
+  singleTopic: z.string().nullable(),
   meetingDirectoryName: z.string(),
 });
 export const topicContextSchema = z.object({

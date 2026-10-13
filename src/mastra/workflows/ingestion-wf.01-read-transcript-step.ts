@@ -3,13 +3,24 @@ import path from 'node:path';
 import { createStep } from '@mastra/core/workflows';
 import { inputFileSchema, transcriptSchema } from './ingestion-wf.schemas';
 import { resolveFromRoot, resolveProjectRoot } from '../../common/utils';
+import { readMeetingContext } from '../meeting-context';
+
+/** Kebab-cases a user-supplied series name for use as a directory segment;
+ * returns an empty string when nothing usable remains. */
+function slugifySeriesName(seriesName: string | undefined): string {
+  return (seriesName ?? '')
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
 
 export const readTranscriptStep = createStep({
   id: 'read-transcript',
   description: 'Read and validate the uploaded transcript.',
   inputSchema: inputFileSchema,
   outputSchema: transcriptSchema,
-  execute: async ({ mastra, inputData: { filePath } }) => {
+  execute: async ({ mastra, requestContext, inputData: { filePath, seriesName } }) => {
     const projectRoot = resolveProjectRoot(process.cwd());
     const inputFilePath = resolveFromRoot(projectRoot, filePath);
     const transcriptContent = await readFile(inputFilePath, 'utf8');
@@ -19,7 +30,11 @@ export const readTranscriptStep = createStep({
       throw new Error('Mastra workspace is not configured.');
     }
 
-    const outputDirName = `${path.basename(inputFilePath, path.extname(inputFilePath))}-${Date.now()}`;
+    const baseName = `${path.basename(inputFilePath, path.extname(inputFilePath))}-${Date.now()}`;
+    const seriesSlug = slugifySeriesName(seriesName);
+    // A series name nests the run under meetings/<series>/<transcript>, so the
+    // series is visible from the workspace layout alone.
+    const outputDirName = seriesSlug ? path.join(seriesSlug, baseName) : baseName;
     const meetingDirectory = path.join('meetings', outputDirName);
     await workspace.mkdir(meetingDirectory, { recursive: true });
     await workspace.writeFile(path.join(meetingDirectory, path.basename(inputFilePath)), transcriptContent);
@@ -28,7 +43,7 @@ export const readTranscriptStep = createStep({
       meetingDirectoryName: outputDirName,
       isValidTranscript: transcriptContent.trim().length > 0,
       transcriptContent,
-      meetingType: 'general',
+      meetingType: readMeetingContext(requestContext).meetingType ?? 'general',
     };
   },
 });

@@ -12,7 +12,7 @@ export const distillTopicStep = createStep({
   description: 'Distill enriched segments into the file content for this topic.',
   inputSchema: enrichedTopicSchema,
   outputSchema: segmentFileSchema,
-  execute: async ({ inputData, mastra }) => {
+  execute: async ({ inputData, mastra, requestContext }) => {
     const response = await mastra.getAgent('meeting-master').generate(
       renderTemplate(distillTopicPrompt(), {
         topic: inputData.topic,
@@ -23,6 +23,7 @@ export const distillTopicStep = createStep({
           z.object({ fileName: z.string(), content: z.string() }),
           '{"fileName":"short-kebab-name","content":"full markdown document"}',
         ),
+        requestContext,
       },
     );
     const fileName = response.object.fileName.replace(/[^a-zA-Z0-9_-]+/g, '-').replace(/^-|-$/g, '') || 'segment';

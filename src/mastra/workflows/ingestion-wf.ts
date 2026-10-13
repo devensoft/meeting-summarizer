@@ -12,7 +12,7 @@ const singleTopicPath = createWorkflow({
 })
   .map(async ({ inputData }) => ({
     transcriptContent: inputData.transcriptContent,
-    topic: inputData.singleTheme!,
+    topic: inputData.singleTopic!,
     isSegment: false,
     meetingDirectoryName: inputData.meetingDirectoryName,
   }))
@@ -43,8 +43,8 @@ const ingestionWorkflow = createWorkflow({
   .then(readTranscriptStep)
   .then(classifyTopicsStep)
   .branch([
-    [async ({ inputData }) => inputData.singleTheme !== null, singleTopicPath],
-    [async ({ inputData }) => inputData.singleTheme === null, multipleTopicsPath],
+    [async ({ inputData }) => inputData.singleTopic !== null, singleTopicPath],
+    [async ({ inputData }) => inputData.singleTopic === null, multipleTopicsPath],
   ])
   .then(collectSegmentsStep)
   .commit();

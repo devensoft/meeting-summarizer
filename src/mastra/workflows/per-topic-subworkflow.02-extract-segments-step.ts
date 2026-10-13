@@ -11,7 +11,7 @@ export const extractSegmentsStep = createStep({
   description: 'Extract coherent segments from the consolidated topic material.',
   inputSchema: consolidatedTopicSchema,
   outputSchema: extractedTopicSchema,
-  execute: async ({ inputData, mastra }) => {
+  execute: async ({ inputData, mastra, requestContext }) => {
     const response = await mastra.getAgent('meeting-master').generate(
       renderTemplate(extractSegmentsPrompt(), {
         topic: inputData.topic,
@@ -22,6 +22,7 @@ export const extractSegmentsStep = createStep({
           z.object({ segments: z.array(segmentSchema) }),
           '{"segments":[{"topic":"segment topic","content":"segment text"}]}',
         ),
+        requestContext,
       },
     );
 
