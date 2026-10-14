@@ -37,3 +37,10 @@ export const INDEX_TITLE_FALLBACK = 'Transcript index';
  * title contains nothing alphanumeric. Distinct from the topic fallback so an
  * untitled index never masquerades as a topic file. */
 export const INDEX_FILE_FALLBACK_SLUG = 'index';
+
+/** Maximum number of enriched-concept candidates one topic keeps. Enforced
+ * by code after the proposal call — never by prompt compliance. */
+export const ENRICHED_CONCEPTS_MAX_CANDIDATES = 10;
+
+/** Maximum number of reference links one enriched concept carries. */
+export const ENRICHED_CONCEPTS_MAX_LINKS = 3;

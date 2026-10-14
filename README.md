@@ -39,11 +39,12 @@ Both formats share one line-numbering scheme: every citable line is prefixed wit
 
 ## Topic file structure
 
-Every topic file follows one fixed structure — **Title, Summary, Key Insights, Contextual Highlights** — assembled by code from structured model output:
+Every topic file follows one fixed structure — **Title, Summary, Key Insights, Contextual Highlights, Enriched Concepts** — assembled by code from structured model output:
 
 - Every `(Lnn)` reference is validated against the transcript; out-of-range references are stripped.
 - Direct quotes are verified against the normalized transcript (whitespace/case-insensitive) and render as quotations; unverifiable ones render unquoted.
 - **Contextual Highlights** appears only when meeting-series context was provided for the run; the section is omitted entirely otherwise.
+- **Enriched Concepts** appears only when the topic proposed candidates. A structured call proposes casually-mentioned concepts (capped at ten per topic by code), each is searched through the provider chain, and a second structured call writes the blurb tying the informal mention to its formal foundation and picks one to three links. Every concept carries a provenance label: `Grounding: web search` when the chain found results (only pages the chain actually returned can be linked), or `Grounding: model-suggested (unverified)` when it found nothing — the one case where model-proposed links are accepted, so the formal term stands even without search.
 - File names are slugified from the title by code, with `-2`, `-3`, … suffixes when a same-run file already holds the name.
 
 ## Transcript index

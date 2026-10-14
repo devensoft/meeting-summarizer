@@ -1,17 +1,32 @@
 import { describe, expect, it } from 'bun:test';
 import { renderTopicFile } from './topic-file-renderer';
-import type { ValidatedTopicFile } from './ingestion-wf.schemas';
+import type { ComposedTopicFile, EnrichedConcept } from './ingestion-wf.schemas';
 
-function topicFile(overrides: Partial<ValidatedTopicFile> = {}): ValidatedTopicFile {
+function concept(overrides: Partial<EnrichedConcept> = {}): EnrichedConcept {
+  return {
+    informalMention: 'five whys',
+    formalFoundation: 'Root cause analysis',
+    blurb: 'An iterative questioning technique for finding the root cause of a problem.',
+    links: [{ title: 'Five whys — Wikipedia', url: 'https://en.wikipedia.org/wiki/Five_whys' }],
+    grounding: 'web-search',
+    ...overrides,
+  };
+}
+
+function topicFile(overrides: Partial<ComposedTopicFile> = {}): ComposedTopicFile {
   return {
     topic: 'Launch plan',
     title: 'Launch plan',
     summary: [{ statement: 'Ship Friday', lineReferences: [1], quote: null, quoteVerified: false }],
     keyInsights: [{ statement: 'Budget approved', lineReferences: [2], quote: null, quoteVerified: false }],
     contextualHighlights: [],
+    enrichedConcepts: [],
     hasMeetingContext: false,
     isSegment: false,
     meetingDirectoryName: '2026-10-14',
+    transcriptContent: '1 | We talk about launch\n',
+    conceptCandidates: [],
+    conceptSearches: [],
     ...overrides,
   };
 }
@@ -113,5 +128,79 @@ describe('renderTopicFile', () => {
     const markdown = renderTopicFile(topicFile({ summary: [], keyInsights: [], contextualHighlights: [] }));
 
     expect(markdown).toBe('# Launch plan\n');
+  });
+
+  it('renders Enriched Concepts last, after Contextual Highlights, in the fixed section order', () => {
+    const markdown = renderTopicFile(
+      topicFile({
+        contextualHighlights: [
+          { statement: 'Ties to the series goal', lineReferences: [4], quote: null, quoteVerified: false },
+        ],
+        hasMeetingContext: true,
+        enrichedConcepts: [concept()],
+      }),
+    );
+
+    const summaryAt = markdown.indexOf('## Summary');
+    const insightsAt = markdown.indexOf('## Key Insights');
+    const highlightsAt = markdown.indexOf('## Contextual Highlights');
+    const conceptsAt = markdown.indexOf('## Enriched Concepts');
+    expect(conceptsAt).toBeGreaterThan(highlightsAt);
+    expect(highlightsAt).toBeGreaterThan(insightsAt);
+    expect(insightsAt).toBeGreaterThan(summaryAt);
+  });
+
+  it('omits the Enriched Concepts section entirely when a topic proposed no candidates', () => {
+    const markdown = renderTopicFile(topicFile({ enrichedConcepts: [] }));
+
+    expect(markdown).not.toContain('Enriched Concepts');
+  });
+
+  it('renders each concept as mention → foundation, its blurb, its grounding label, and its links', () => {
+    const markdown = renderTopicFile(
+      topicFile({
+        enrichedConcepts: [
+          concept({
+            links: [
+              { title: 'Five whys — Wikipedia', url: 'https://en.wikipedia.org/wiki/Five_whys' },
+              { title: 'The Five Whys, explained', url: 'https://example.com/five-whys-explained' },
+            ],
+          }),
+        ],
+      }),
+    );
+
+    expect(markdown).toContain(
+      [
+        '## Enriched Concepts',
+        '',
+        '- **five whys** → Root cause analysis',
+        '  An iterative questioning technique for finding the root cause of a problem.',
+        '  Grounding: web search',
+        '  - [Five whys — Wikipedia](https://en.wikipedia.org/wiki/Five_whys)',
+        '  - [The Five Whys, explained](https://example.com/five-whys-explained)',
+      ].join('\n'),
+    );
+  });
+
+  it('labels model-suggested links as unverified', () => {
+    const markdown = renderTopicFile(
+      topicFile({
+        enrichedConcepts: [concept({ grounding: 'model-suggested', links: [] })],
+      }),
+    );
+
+    expect(markdown).toContain('Grounding: model-suggested (unverified)');
+    expect(markdown).not.toContain('Grounding: web search');
+  });
+
+  it('renders a concept without links as blurb and grounding label only', () => {
+    const markdown = renderTopicFile(
+      topicFile({ enrichedConcepts: [concept({ grounding: 'model-suggested', links: [] })] }),
+    );
+
+    expect(markdown).toContain('- **five whys** → Root cause analysis');
+    expect(markdown).toContain('  Grounding: model-suggested (unverified)');
+    expect(markdown).not.toContain('](');
   });
 });

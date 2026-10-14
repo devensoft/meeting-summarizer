@@ -1,4 +1,4 @@
-import type { ValidatedPoint, ValidatedTopicFile } from './ingestion-wf.schemas';
+import type { ComposedTopicFile, EnrichedConcept, ValidatedPoint } from './ingestion-wf.schemas';
 
 /**
  * Topic-file renderer (spec: "Per-topic files are schema-enforced").
@@ -6,23 +6,53 @@ import type { ValidatedPoint, ValidatedTopicFile } from './ingestion-wf.schemas'
  * The markdown of a topic file is assembled here, in code, from validated
  * structured output — no free-form model markdown reaches the file. Sections
  * render in fixed order — Title, Summary, Key Insights, Contextual
- * Highlights — every point carries its validated `(Lnn)` references, and a
- * verified quote renders as a quotation while an unverified one renders
- * unquoted. Contextual Highlights exist only when meeting context exists;
- * any section left empty by validation is omitted entirely, so no empty
- * headers reach the file.
+ * Highlights, Enriched Concepts — every point carries its validated `(Lnn)`
+ * references, and a verified quote renders as a quotation while an unverified
+ * one renders unquoted. Contextual Highlights exist only when meeting context
+ * exists, and Enriched Concepts only when the topic proposed candidates; any
+ * section left empty by validation is omitted entirely, so no empty headers
+ * reach the file.
  */
 
 /** Renders the full markdown document for one validated topic file. */
-export function renderTopicFile(file: ValidatedTopicFile): string {
+export function renderTopicFile(file: ComposedTopicFile): string {
   const sections = [
     `# ${file.title}`,
     renderSection('Summary', file.summary, file.hasMeetingContext),
     renderSection('Key Insights', file.keyInsights, file.hasMeetingContext),
     renderSection('Contextual Highlights', file.contextualHighlights, file.hasMeetingContext),
+    renderConceptsSection(file.enrichedConcepts),
   ];
 
   return `${sections.filter((section) => section !== null).join('\n')}\n`;
+}
+
+/** Renders the Enriched Concepts section, or null when the topic proposed no
+ * candidates — the section never renders empty. */
+function renderConceptsSection(concepts: readonly EnrichedConcept[]): string | null {
+  if (concepts.length === 0) {
+    return null;
+  }
+
+  return ['', '## Enriched Concepts', '', ...concepts.map(renderConcept)].join('\n');
+}
+
+/** Renders one concept: the informal mention tied to its formal foundation,
+ * the blurb beneath it, the provenance label, then its reference links. */
+function renderConcept(concept: EnrichedConcept): string {
+  return [
+    `- **${concept.informalMention}** → ${concept.formalFoundation}`,
+    `  ${concept.blurb}`,
+    `  ${groundingLabel(concept.grounding)}`,
+    ...concept.links.map((link) => `  - [${link.title}](${link.url})`),
+  ].join('\n');
+}
+
+/** The provenance label spec'd for enriched concepts: searched links say so;
+ * model-proposed links (allowed only when the chain yielded nothing) carry
+ * the unverified label. */
+function groundingLabel(grounding: EnrichedConcept['grounding']): string {
+  return grounding === 'web-search' ? 'Grounding: web search' : 'Grounding: model-suggested (unverified)';
 }
 
 /** Renders one `##` section, or null when it must be omitted: sections with
