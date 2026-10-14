@@ -136,6 +136,12 @@ tool: sessions run the direct-tools preset with a fixed allowlist of exactly
   | `SEARCH_RESULTS_PER_QUERY` | 3 |
   | `MAX_WEB_SEARCH_QUERIES` | 25 |
 
+  `MAX_WEB_SEARCH_QUERIES` is an internal guardrail, not a pipeline budget: it
+  bounds the input of the registered `web-search` tool, which is directly
+  callable (from Studio or a model) with an arbitrary query list. The
+  enriched-concepts pipeline itself sends at most one query per concept — ten
+  per topic — so the cap never engages there.
+
 ### Optional live smoke search
 
 The test suite never touches the network (it runs on mock providers). To
