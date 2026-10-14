@@ -124,7 +124,7 @@ tool: sessions run the direct-tools preset with a fixed allowlist of exactly
   problems never fail a meeting run.
 - All thresholds (wave concurrency, timeout, backoff/retry caps, per-query
   result count, per-call query cap) live as named constants in
-  `src/mastra/search/search-thresholds.ts`:
+  `src/mastra/tools/web-search/search-thresholds.ts`:
 
   | Constant | Value |
   |---|---|

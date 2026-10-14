@@ -17,7 +17,7 @@
  * no key configured the script prints an explicit empty result (it must
  * never throw) — that path is already covered by unit tests.
  */
-import { executeWebSearch } from '../src/mastra/search/web-search-tool';
+import { executeWebSearch } from '../src/mastra/tools/web-search/web-search-tool';
 
 const query = process.argv[2]?.trim();
 const composioUserId = process.argv[3]?.trim() || undefined;

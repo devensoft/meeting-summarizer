@@ -7,7 +7,7 @@ import {
 import { loadPrompt, renderTemplate } from '../../common/prompts';
 import { jsonOnly } from './structured-output';
 import { searchEnrichedConcepts, selectConceptCandidates } from './enriched-concepts';
-import { executeWebSearch } from '../search/web-search-tool';
+import { executeWebSearch } from '../tools/web-search/web-search-tool';
 
 const proposeConceptsPrompt = loadPrompt(
   import.meta.url,

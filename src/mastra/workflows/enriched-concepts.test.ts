@@ -6,8 +6,8 @@ import {
   selectConceptCandidates,
 } from './enriched-concepts';
 import type { ConceptCandidate, ConceptProposal, ConceptSearchItem } from './ingestion-wf.schemas';
-import { runWebSearchChain } from '../search/search-chain';
-import { MockSearchProvider, okFor, resultsFor } from '../search/mock-provider';
+import { runWebSearchChain } from '../tools/web-search/search-chain';
+import { MockSearchProvider, okFor, resultsFor } from '../tools/web-search/mock-provider';
 
 function candidates(...mentions: string[]): ConceptCandidate[] {
   return mentions.map((informalMention) => ({ informalMention }));
