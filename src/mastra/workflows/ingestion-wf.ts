@@ -27,7 +27,7 @@ const multipleTopicsPath = createWorkflow({
   outputSchema: segmentCreatedSchema.array(),
 })
   .map(async ({ inputData }) =>
-    inputData.topics.map(topic => ({
+    inputData.topics.map(({ topic }) => ({
       transcriptContent: inputData.transcriptContent,
       topic,
       isSegment: true,

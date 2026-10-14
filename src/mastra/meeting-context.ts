@@ -1,4 +1,5 @@
 import type { RequestContext } from '@mastra/core/request-context';
+import type { ClassifiedTopic } from './workflows/ingestion-wf.schemas';
 
 /**
  * Optional per-run framing for one meeting series, carried in the run's
@@ -54,22 +55,38 @@ export function renderMeetingContextCard(context: Partial<MeetingContext>): stri
  * never shadow a kept topic, and the tie-to-keep fallback keeps every
  * candidate when the classifier would omit all of them — an all-tangent
  * transcript must still produce notes, so a fully empty result is a
- * classifier failure, not a valid outcome.
+ * classifier failure, not a valid outcome. Labels are trimmed, blank labels
+ * are dropped, and duplicates collapse to their first entry; each
+ * classified topic keeps its line ranges untouched.
  */
 export function reconcileTopics(
-  topics: string[],
-  omittedTopics: string[],
-): { topics: string[]; omittedTopics: string[] } {
-  const normalize = (labels: string[]): string[] =>
-    Array.from(new Set(labels.map((label) => label.trim()).filter(Boolean)));
+  topics: ClassifiedTopic[],
+  omittedTopics: ClassifiedTopic[],
+): { topics: ClassifiedTopic[]; omittedTopics: ClassifiedTopic[] } {
+  const normalize = (entries: ClassifiedTopic[]): ClassifiedTopic[] => {
+    const seen = new Set<string>();
+    const unique: ClassifiedTopic[] = [];
+    for (const entry of entries) {
+      const label = entry.topic.trim();
+      if (label === '') {
+        continue;
+      }
+      const key = label.toLowerCase();
+      if (seen.has(key)) {
+        continue;
+      }
+      seen.add(key);
+      unique.push({ ...entry, topic: label });
+    }
+    return unique;
+  };
 
   const kept = normalize(topics);
   if (kept.length === 0) {
     return { topics: normalize(omittedTopics), omittedTopics: [] };
   }
 
-  const keptKeys = new Set(kept.map((topic) => topic.toLowerCase()));
-  const omissions = normalize(omittedTopics).filter((topic) => !keptKeys.has(topic.toLowerCase()));
+  const omissions = normalize(omittedTopics).filter((topic) => !kept.some((keptTopic) => keptTopic.topic.toLowerCase() === topic.topic.toLowerCase()));
 
   return { topics: kept, omittedTopics: omissions };
 }

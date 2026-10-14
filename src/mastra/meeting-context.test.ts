@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'bun:test';
 import { RequestContext } from '@mastra/core/request-context';
+import type { ClassifiedTopic, LineRange } from './workflows/ingestion-wf.schemas';
 import { readMeetingContext, reconcileTopics, renderMeetingContextCard } from './meeting-context';
 
 describe('readMeetingContext', () => {
@@ -53,26 +54,36 @@ describe('renderMeetingContextCard', () => {
 });
 
 describe('reconcileTopics', () => {
-  it('dedupes and trims kept topics', () => {
-    expect(reconcileTopics(['Budget', '  Budget ', 'Roadmap'], [])).toEqual({
-      topics: ['Budget', 'Roadmap'],
+  const topic = (topic: string, ...lineRanges: LineRange[]): ClassifiedTopic => ({ topic, lineRanges });
+
+  it('dedupes and trims kept topics, keeping the first entry of a duplicate', () => {
+    expect(
+      reconcileTopics([topic('Budget', { startLine: 1, endLine: 4 }), topic('  Budget ', { startLine: 5, endLine: 6 }), topic('Roadmap', { startLine: 7, endLine: 9 })], []),
+    ).toEqual({
+      topics: [topic('Budget', { startLine: 1, endLine: 4 }), topic('Roadmap', { startLine: 7, endLine: 9 })],
       omittedTopics: [],
     });
   });
 
   it('keeps every candidate when the classifier would omit all of them', () => {
-    expect(reconcileTopics([], ['Dogs', 'Weather'])).toEqual({ topics: ['Dogs', 'Weather'], omittedTopics: [] });
-  });
-
-  it('never lets an omission shadow a kept topic', () => {
-    expect(reconcileTopics(['Budget'], ['budget', 'Weather'])).toEqual({
-      topics: ['Budget'],
-      omittedTopics: ['Weather'],
+    expect(reconcileTopics([], [topic('Dogs', { startLine: 2, endLine: 3 }), topic('Weather')])).toEqual({
+      topics: [topic('Dogs', { startLine: 2, endLine: 3 }), topic('Weather')],
+      omittedTopics: [],
     });
   });
 
-  it('drops blank omission labels', () => {
-    expect(reconcileTopics(['Budget'], ['', '   '])).toEqual({ topics: ['Budget'], omittedTopics: [] });
+  it('never lets an omission shadow a kept topic, matching labels case-insensitively', () => {
+    expect(reconcileTopics([topic('Budget', { startLine: 1, endLine: 4 })], [topic('budget', { startLine: 2, endLine: 3 }), topic('Weather', { startLine: 8, endLine: 9 })])).toEqual({
+      topics: [topic('Budget', { startLine: 1, endLine: 4 })],
+      omittedTopics: [topic('Weather', { startLine: 8, endLine: 9 })],
+    });
+  });
+
+  it('drops omissions whose label is blank, even when they carry ranges', () => {
+    expect(reconcileTopics([topic('Budget', { startLine: 1, endLine: 4 })], [topic('', { startLine: 5, endLine: 6 }), topic('   ')])).toEqual({
+      topics: [topic('Budget', { startLine: 1, endLine: 4 })],
+      omittedTopics: [],
+    });
   });
 
   it('reports an empty result when the classifier returned nothing at all', () => {
