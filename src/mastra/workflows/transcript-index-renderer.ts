@@ -6,16 +6,19 @@ import { renderCitedPointBody } from './topic-file-renderer';
  *
  * The markdown of a multi-topic meeting's index is assembled here, in code,
  * from validated structured output and run data — no free-form model
- * markdown reaches the file. Sections render in fixed order — title,
- * executive summary, wikilinked topic index, recurring themes, numbered
- * decision log, action-item table, unresolved items, numbered topic
- * omissions — and every number (decision log, omissions) is assigned by
- * code. The topic index is built from the run's actual written files, so
- * every `[[wikilink]]` resolves. Like topic files, any section left empty
- * by validation is omitted entirely; the executive summary renders as the
- * opening paragraph and its absence leaves the topic index directly under
- * the title.
+ * markdown reaches the file. All eight section headers always render, in
+ * fixed order — title, executive summary, wikilinked topic index, recurring
+ * themes, numbered decision log, action-item table, unresolved items,
+ * numbered topic omissions — and every number (decision log, omissions) is
+ * assigned by code. The topic index is built from the run's actual written
+ * files, so every `[[wikilink]]` resolves. A section with no validated
+ * content shows an explicit `_None recorded._` marker under its header
+ * instead of disappearing — the reader can tell an empty section from a
+ * missing one.
  */
+
+/** The absence marker under an empty section's header. */
+const NOTHING_RECORDED = '_None recorded._';
 
 /** One rendered document input: the validated index content, the file names
  * (stems) of the run's written topic files in write order, and the recorded
@@ -31,7 +34,7 @@ export interface TopicIndexDocument {
 export function renderTopicIndex({ index, topicFileNames, omittedTopics }: TopicIndexDocument): string {
   const sections = [
     `# ${index.title}`,
-    index.executiveSummary === '' ? null : ['', index.executiveSummary].join('\n'),
+    renderSection('Executive Summary', index.executiveSummary === '' ? [] : [index.executiveSummary]),
     renderSection('Topic Index', topicFileNames.map((fileName) => `- [[${fileName}]]`)),
     renderSection('Recurring Themes', index.recurringThemes.map(renderRecurringTheme)),
     renderSection('Decision Log', index.decisions.map(renderDecision)),
@@ -40,14 +43,16 @@ export function renderTopicIndex({ index, topicFileNames, omittedTopics }: Topic
     renderSection('Topic Omissions', renderOmissions(omittedTopics)),
   ];
 
-  return `${sections.filter((section) => section !== null).join('\n')}\n`;
+  return `${sections.join('\n')}\n`;
 }
 
-/** Renders one `##` section, or null when it has no lines — a section left
- * empty by validation never renders. */
-function renderSection(heading: string, lines: string[]): string | null {
+/** Renders one `##` section of the fixed document skeleton. Every section
+ * renders — the document's contract is all eight headers, in order — and a
+ * section with no lines shows the absence marker under its header instead
+ * of disappearing. */
+function renderSection(heading: string, lines: string[]): string {
   if (lines.length === 0) {
-    return null;
+    return ['', `## ${heading}`, '', NOTHING_RECORDED].join('\n');
   }
 
   return ['', `## ${heading}`, '', ...lines].join('\n');
@@ -68,8 +73,8 @@ function renderDecision(point: ValidatedPoint, position: number): string {
 const ACTION_ITEM_COLUMNS = ['Assigner', 'Assignee', 'Due', 'Deliverable'] as const;
 
 function renderActionItemTable(items: ValidatedTopicIndex['actionItems']): string[] {
-  // An empty table is a section left empty by validation — nothing renders,
-  // not even the header row.
+  // An empty table contributes no rows; its section header still renders,
+  // carrying the absence marker.
   if (items.length === 0) {
     return [];
   }

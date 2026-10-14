@@ -27,6 +27,8 @@ function fullExpectedDocument(): string {
   return [
     '# Q3 product sync',
     '',
+    '## Executive Summary',
+    '',
     'The team aligned on the launch.',
     '',
     '## Topic Index',
@@ -152,7 +154,7 @@ describe('renderTopicIndex', () => {
     expect(markdown).toContain('2. Scheduling aside (L52-L54, L60-L61)');
   });
 
-  it('omits a section left empty after validation instead of rendering it empty', () => {
+  it('renders an explicit absence marker under an empty section instead of dropping its header', () => {
     const markdown = renderTopicIndex({
       index: index({
         executiveSummary: '',
@@ -165,11 +167,22 @@ describe('renderTopicIndex', () => {
       omittedTopics: [],
     });
 
-    expect(markdown).toBe('# Q3 product sync\n\n## Topic Index\n\n- [[launch-plan]]\n- [[budget-review]]\n');
-    expect(markdown).not.toContain('Recurring Themes');
-    expect(markdown).not.toContain('Decision Log');
-    expect(markdown).not.toContain('Action Items');
-    expect(markdown).not.toContain('Unresolved Items');
-    expect(markdown).not.toContain('Topic Omissions');
+    // All eight sections render, in fixed order — even when empty.
+    const headings = markdown.split('\n').filter((line) => line.startsWith('##'));
+    expect(headings).toEqual([
+      '## Executive Summary',
+      '## Topic Index',
+      '## Recurring Themes',
+      '## Decision Log',
+      '## Action Items',
+      '## Unresolved Items',
+      '## Topic Omissions',
+    ]);
+    expect(markdown).toContain('## Executive Summary\n\n_None recorded._');
+    expect(markdown).toContain('## Recurring Themes\n\n_None recorded._');
+    expect(markdown).toContain('## Decision Log\n\n_None recorded._');
+    expect(markdown).toContain('## Action Items\n\n_None recorded._');
+    expect(markdown).toContain('## Unresolved Items\n\n_None recorded._');
+    expect(markdown).toContain('## Topic Omissions\n\n_None recorded._');
   });
 });

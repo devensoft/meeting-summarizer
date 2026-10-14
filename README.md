@@ -62,7 +62,7 @@ One structured agent call reads the written topic files (from disk), the recorde
 7. **Unresolved items** — open matters with the lines where they were left.
 8. **Topic omissions** — the first place omissions render: numbered, each with its transcript line ranges.
 
-Every empty section is omitted entirely — no empty headers. The workflow's run report distinguishes the two document kinds with a `kind` discriminator on each entry: `topic` for topic files, `index` for the transcript index.
+All eight section headers always render, in fixed order — a section with nothing to show carries an explicit `_None recorded._` marker under its header instead of disappearing, so an empty section is distinguishable from a missing one. The workflow's run report distinguishes the two document kinds with a `kind` discriminator on each entry: `topic` for topic files, `index` for the transcript index.
 
 ## Quickstart
 
