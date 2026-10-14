@@ -1,7 +1,12 @@
 import { z } from 'zod';
 
 export const inputFileSchema = z.object({
-  filePath: z.string().min(1).describe('Path to a plain-text transcript on the Mastra server.'),
+  filePath: z
+    .string()
+    .min(1)
+    .describe(
+      'Path to a plain-text transcript on the Mastra server. Relative paths resolve against the project root (or the directory named by PROJECT_ROOT, when set); absolute paths are used as-is.',
+    ),
   seriesName: z
     .string()
     .optional()
