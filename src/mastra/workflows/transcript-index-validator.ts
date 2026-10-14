@@ -5,7 +5,7 @@ import type {
   ValidatedUnresolvedItem,
 } from './ingestion-wf.schemas';
 import { INDEX_TITLE_FALLBACK } from './constants';
-import { stripInlineReferences, validateCitedPoints, validateLineReferences } from './citation-validator';
+import { stripInlineReferences, validateCitedPoints, validateLineReferences, type CitationTarget } from './citation-validator';
 import { dedupeByTrimmedLowerCaseKey } from '../../common/utils';
 
 /**
@@ -29,7 +29,7 @@ import { dedupeByTrimmedLowerCaseKey } from '../../common/utils';
 /** Validates the index agent's structured output for one multi-topic run. */
 export function validateTopicIndexContent(
   content: TopicIndexContent,
-  citationTarget: { lineCount: number; transcriptContent: string },
+  citationTarget: CitationTarget,
   topicFileNames: string[],
 ): ValidatedTopicIndex {
   return {
@@ -98,7 +98,7 @@ function validateActionItems(items: ActionItem[]): ActionItem[] {
 
 function validateUnresolvedItems(
   items: TopicIndexContent['unresolvedItems'],
-  citationTarget: { lineCount: number; transcriptContent: string },
+  citationTarget: CitationTarget,
 ): ValidatedUnresolvedItem[] {
   const validated: ValidatedUnresolvedItem[] = [];
   for (const item of items) {
