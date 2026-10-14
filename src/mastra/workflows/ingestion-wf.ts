@@ -14,6 +14,8 @@ const singleTopicPath = createWorkflow({
     transcriptContent: inputData.transcriptContent,
     topic: inputData.singleTopic!,
     isSegment: false,
+    durationSeconds: inputData.durationSeconds,
+    lineCount: inputData.lineCount,
     meetingDirectoryName: inputData.meetingDirectoryName,
   }))
   .then(perTopicSubworkflow)
@@ -29,6 +31,8 @@ const multipleTopicsPath = createWorkflow({
       transcriptContent: inputData.transcriptContent,
       topic,
       isSegment: true,
+      durationSeconds: inputData.durationSeconds,
+      lineCount: inputData.lineCount,
       meetingDirectoryName: inputData.meetingDirectoryName,
     })),
   )
