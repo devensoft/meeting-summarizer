@@ -31,7 +31,7 @@ export const distillTopicStep = createStep({
       {
         structuredOutput: jsonOnly(
           citedTopicContentSchema,
-          '{"title":"Topic title","summary":[{"statement":"What was discussed","lineReferences":[3,4],"quote":null}],"keyInsights":[{"statement":"The decision taken","lineReferences":[7],"quote":"exact words from line 7"}],"contextualHighlights":[]}',
+          '{"title":"Topic title","summary":[{"statement":"What was discussed","lineReferences":[3,4],"quote":null}],"keyInsights":[{"statement":"The decision taken","lineReferences":[7],"quote":"exact words from line 7"}],"contextualHighlights":[{"statement":"Ties this discussion to the series background","lineReferences":[12],"quote":null}]}',
         ),
         requestContext,
       },

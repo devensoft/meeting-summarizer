@@ -99,7 +99,10 @@ export const citedPointSchema = z.object({
   quote: z
     .string()
     .nullable()
-    .describe("The speaker's exact words copied from the transcript, when the wording itself matters; null otherwise."),
+    .catch(null)
+    .describe(
+      "The speaker's exact words copied from the transcript, when the wording itself matters; null otherwise. An omitted or malformed quote is read as null — a missing quote must never fail the run.",
+    ),
 });
 export type CitedPoint = z.infer<typeof citedPointSchema>;
 export const citedTopicContentSchema = z.object({
