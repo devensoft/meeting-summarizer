@@ -1,6 +1,7 @@
 import { ENRICHED_CONCEPTS_MAX_CANDIDATES, ENRICHED_CONCEPTS_MAX_LINKS } from './constants';
 import type { ConceptCandidate, ConceptProposal, ConceptSearchItem, EnrichedConcept } from './ingestion-wf.schemas';
 import type { WebSearchChainResult } from '../search/search-chain';
+import { dedupeByTrimmedLowerCaseKey } from '../../common/utils';
 
 /**
  * Enriched-concepts determinism (spec: "Enriched Concepts grounding").
@@ -18,21 +19,9 @@ import type { WebSearchChainResult } from '../search/search-chain';
  * `ENRICHED_CONCEPTS_MAX_CANDIDATES` — the cap is enforced here, by code,
  * never by prompt compliance. */
 export function selectConceptCandidates(candidates: readonly ConceptCandidate[]): ConceptCandidate[] {
-  const seen = new Set<string>();
-  const unique: ConceptCandidate[] = [];
-  for (const candidate of candidates) {
-    const mention = candidate.informalMention.trim();
-    if (mention === '') {
-      continue;
-    }
-    const key = mention.toLowerCase();
-    if (seen.has(key)) {
-      continue;
-    }
-    seen.add(key);
-    unique.push({ informalMention: mention });
-  }
-  return unique.slice(0, ENRICHED_CONCEPTS_MAX_CANDIDATES);
+  return dedupeByTrimmedLowerCaseKey(candidates, (candidate) => candidate.informalMention)
+    .slice(0, ENRICHED_CONCEPTS_MAX_CANDIDATES)
+    .map((candidate) => ({ informalMention: candidate.informalMention.trim() }));
 }
 
 /** Runs the concept searches through one injected boundary. Production passes
@@ -78,13 +67,13 @@ export function resolveEnrichedConcepts(
   searches: readonly ConceptSearchItem[],
   proposals: readonly ConceptProposal[],
 ): EnrichedConcept[] {
-  const proposalsByMention = new Map<string, ConceptProposal>();
-  for (const proposal of proposals) {
-    const key = proposal.informalMention.trim().toLowerCase();
-    if (!proposalsByMention.has(key)) {
-      proposalsByMention.set(key, proposal);
-    }
-  }
+  // The shared dedupe rule indexes the proposals: first mention wins, so a
+  // repeated informal mention can never swap which proposal a search binds to.
+  const proposalsByMention = new Map(
+    dedupeByTrimmedLowerCaseKey(proposals, (proposal) => proposal.informalMention).map(
+      (proposal): [string, ConceptProposal] => [proposal.informalMention.trim().toLowerCase(), proposal],
+    ),
+  );
 
   const resolved: EnrichedConcept[] = [];
   for (const search of searches) {

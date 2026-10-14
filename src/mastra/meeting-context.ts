@@ -1,5 +1,6 @@
 import type { RequestContext } from '@mastra/core/request-context';
 import type { ClassifiedTopic } from './workflows/ingestion-wf.schemas';
+import { dedupeByTrimmedLowerCaseKey } from '../common/utils';
 
 /**
  * Optional per-run framing for one meeting series, carried in the run's
@@ -63,23 +64,10 @@ export function reconcileTopics(
   topics: ClassifiedTopic[],
   omittedTopics: ClassifiedTopic[],
 ): { topics: ClassifiedTopic[]; omittedTopics: ClassifiedTopic[] } {
-  const normalize = (entries: ClassifiedTopic[]): ClassifiedTopic[] => {
-    const seen = new Set<string>();
-    const unique: ClassifiedTopic[] = [];
-    for (const entry of entries) {
-      const label = entry.topic.trim();
-      if (label === '') {
-        continue;
-      }
-      const key = label.toLowerCase();
-      if (seen.has(key)) {
-        continue;
-      }
-      seen.add(key);
-      unique.push({ ...entry, topic: label });
-    }
-    return unique;
-  };
+  // The shared dedupe rule (trim, lowercase-compare, first entry wins) does
+  // the list work; the ranges ride on the surviving entry untouched.
+  const normalize = (entries: ClassifiedTopic[]): ClassifiedTopic[] =>
+    dedupeByTrimmedLowerCaseKey(entries, (entry) => entry.topic).map((entry) => ({ ...entry, topic: entry.topic.trim() }));
 
   const kept = normalize(topics);
   if (kept.length === 0) {
