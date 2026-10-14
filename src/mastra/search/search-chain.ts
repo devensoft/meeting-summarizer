@@ -13,19 +13,27 @@ import {
   SEARCH_WAVE_CONCURRENCY,
 } from './search-thresholds';
 
-/** Why a chain run produced nothing; surfaced so callers can log or label provenance. */
-export type WebSearchEmptyReason =
+/**
+ * Why a chain run produced nothing; surfaced so callers can log or label
+ * provenance. The literals live here once — the `WebSearchEmptyReason` type
+ * and the web-search tool's `emptyReasonSchema` are both derived from it.
+ */
+export const WEB_SEARCH_EMPTY_REASONS = [
   /** The configured provider list was empty (unset, blank, or unrecognizable). */
-  | 'no-providers-configured'
+  'no-providers-configured',
   /**
    * The COMPOSIO_API_KEY is absent; set by the env-aware entry point
    * (`executeWebSearch`), which disables the chain before any provider runs.
    */
-  | 'composio-api-key-missing'
+  'composio-api-key-missing',
   /** Providers were configured but every attempt failed or was rate-limited past its cap. */
-  | 'chain-exhausted'
+  'chain-exhausted',
   /** Attempts succeeded but every provider returned zero results. */
-  | 'no-results';
+  'no-results',
+] as const;
+
+/** Why a chain run produced nothing; surfaced so callers can log or label provenance. */
+export type WebSearchEmptyReason = (typeof WEB_SEARCH_EMPTY_REASONS)[number];
 
 export interface SearchChainItem {
   query: string;
