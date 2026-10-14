@@ -14,13 +14,17 @@ transcript ──▶ read ──▶ classify topics ──▶ ┌─ single them
                                              consolidate ▶ extract ▶ enrich ▶ distill ▶ write
                                                                     │
                                                                     ▼
+                                             collect run ─▶ write transcript index (multi-topic runs only)
+                                                                    │
+                                                                    ▼
                                                      .workspace/meetings/<meeting>/
 ```
 
 1. **Read & normalize** the transcript (plain text or WebVTT — see below).
 2. **Classify** it: one overarching theme, or several distinct topics.
 3. **Per topic**, a subworkflow consolidates the relevant content, extracts key segments, enriches them, and distills everything into a structured topic file — assembled by code, never free-form model markdown (see below).
-4. **Collect** — all topic documents are written to a per-meeting output folder and reported back with their paths and sizes.
+4. **Collect** the run — all topic documents are written to a per-meeting output folder with their paths and sizes, together with the run-level data (normalized transcript, recorded omissions) the index step needs.
+5. **Write the transcript index** — multi-topic runs only; it ties the topic files together (see below).
 
 The whole flow is observable: every run is traced and spans are persisted, so you can inspect exactly what the model did in Mastra Studio.
 
@@ -41,6 +45,23 @@ Every topic file follows one fixed structure — **Title, Summary, Key Insights,
 - Direct quotes are verified against the normalized transcript (whitespace/case-insensitive) and render as quotations; unverifiable ones render unquoted.
 - **Contextual Highlights** appears only when meeting-series context was provided for the run; the section is omitted entirely otherwise.
 - File names are slugified from the title by code, with `-2`, `-3`, … suffixes when a same-run file already holds the name.
+
+## Transcript index
+
+A meeting classified into **two or more topics** gets a transcript index written beside its topic files — the overview document a participant who missed the meeting reads first. Single-topic runs (a natural one or one collapsed by topic dominance) produce no index, and their recorded omissions stay data.
+
+One structured agent call reads the written topic files (from disk), the recorded topic omissions, and the normalized transcript; **code assembles the markdown and assigns every number**. Sections render in fixed order:
+
+1. **Title** — the file is named from its code-slugified title, with the same `-2`, `-3`, … collision suffixes topic files use.
+2. **Executive summary** — one paragraph to catch up in a single read.
+3. **Topic index** — every topic file of the run, wikilinked `[[slug]]`, so the links resolve in your notes tool.
+4. **Recurring themes** — only subjects the model backed with two or more of the run's actual topic files; code drops anything less.
+5. **Decision log** — numbered by code; each decision carries its `(Lnn)` references and a quote verified exactly like topic files (unverifiable quotes render unquoted).
+6. **Action items** — a table with all four fields schema-required: Assigner, Assignee, Due (`YYYY-MM-DD` or `unstated`), Deliverable.
+7. **Unresolved items** — open matters with the lines where they were left.
+8. **Topic omissions** — the first place omissions render: numbered, each with its transcript line ranges.
+
+Every empty section is omitted entirely — no empty headers. The workflow's run report distinguishes the two document kinds with a `kind` discriminator on each entry: `topic` for topic files, `index` for the transcript index.
 
 ## Quickstart
 
