@@ -5,7 +5,7 @@ export const inputFileSchema = z.object({
     .string()
     .min(1)
     .describe(
-      'Path to a plain-text transcript on the Mastra server. Relative paths resolve against the project root (or the directory named by PROJECT_ROOT, when set); absolute paths are used as-is.',
+      'Path to a WebVTT (.vtt) or plain-text transcript on the Mastra server. Relative paths resolve against the project root (or the directory named by PROJECT_ROOT, when set); absolute paths are used as-is.',
     ),
   seriesName: z
     .string()
@@ -17,7 +17,16 @@ export const inputFileSchema = z.object({
 export const transcriptSchema = z.object({
   meetingDirectoryName: z.string().min(1),
   isValidTranscript: z.boolean(),
-  transcriptContent: z.string(),
+  transcriptContent: z
+    .string()
+    .describe(
+      'The normalized transcript: line-numbered plain text with stable "NN | " prefixes. It is the citation target every downstream prompt reads.',
+    ),
+  durationSeconds: z
+    .number()
+    .nullable()
+    .describe('Meeting duration in seconds, parsed from VTT cue timestamps; null for plain-text input.'),
+  lineCount: z.number().int().nonnegative().describe('Number of numbered lines in the normalized transcript.'),
   meetingType: z.string(),
 });
 export const topicResultSchema = z.object({
@@ -25,12 +34,16 @@ export const topicResultSchema = z.object({
   topics: z.array(z.string()),
   omittedTopics: z.array(z.string()),
   singleTopic: z.string().nullable(),
+  durationSeconds: z.number().nullable(),
+  lineCount: z.number().int().nonnegative(),
   meetingDirectoryName: z.string(),
 });
 export const topicContextSchema = z.object({
   transcriptContent: z.string(),
   topic: z.string(),
   isSegment: z.boolean(),
+  durationSeconds: z.number().nullable(),
+  lineCount: z.number().int().nonnegative(),
   meetingDirectoryName: z.string(),
 });
 export const segmentSchema = z.object({
