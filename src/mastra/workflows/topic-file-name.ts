@@ -15,14 +15,16 @@ const FILE_EXTENSION = '.md';
 
 /** Kebab-cases a distilled title into a file-name slug: lowercase, runs of
  * non-alphanumeric characters collapsed to one dash, no leading or trailing
- * dash; falls back to `topic` when nothing usable remains. */
-export function slugifyTopicTitle(title: string): string {
+ * dash; falls back to `fallbackSlug` (default `topic`) when nothing usable
+ * remains. The transcript index passes its own fallback so an untitled index
+ * never collides with topic-file naming. */
+export function slugifyTopicTitle(title: string, fallbackSlug: string = FALLBACK_SLUG): string {
   const slug = title
     .trim()
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '');
-  return slug === '' ? FALLBACK_SLUG : slug;
+  return slug === '' ? fallbackSlug : slug;
 }
 
 /** Returns the topic file name for `slug` — `slug.md`, or `slug-2.md`,

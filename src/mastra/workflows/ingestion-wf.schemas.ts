@@ -47,6 +47,7 @@ export const classifiedTopicSchema = z.object({
     .describe('Where the topic lives in the normalized transcript: one range per continuous stretch of discussion.'),
 });
 export type ClassifiedTopic = z.infer<typeof classifiedTopicSchema>;
+export type TopicResult = z.infer<typeof topicResultSchema>;
 export const topicResultSchema = z.object({
   transcriptContent: z.string(),
   topics: z.array(classifiedTopicSchema),
@@ -85,6 +86,7 @@ export const segmentCreatedSchema = z.object({
   fileSize: z.number().int().nonnegative(),
   isSegment: z.boolean(),
 });
+export type SegmentCreated = z.infer<typeof segmentCreatedSchema>;
 export const citedPointSchema = z.object({
   statement: z
     .string()
@@ -131,6 +133,7 @@ export const extractedTopicSchema = consolidatedTopicSchema.extend({
 export const enrichedTopicSchema = extractedTopicSchema.extend({
   enrichedSegments: z.array(segmentSchema),
 });
+
 export const distilledTopicSchema = validatedTopicFileSchema.extend({
   transcriptContent: z
     .string()
@@ -187,3 +190,119 @@ export const composedTopicFileSchema = proposedConceptsSchema.extend({
   enrichedConcepts: z.array(enrichedConceptSchema),
 });
 export type ComposedTopicFile = z.infer<typeof composedTopicFileSchema>;
+
+// --- Transcript index (spec: "Transcript index") ---
+
+/** One created-file entry in the workflow's output: a topic file or the
+ * transcript index. The `kind` discriminator tells them apart — the index is
+ * not a topic, and consumers should never have to guess from `isSegment`. */
+export const runOutputEntrySchema = segmentCreatedSchema.extend({
+  kind: z.enum(['topic', 'index']).describe("What this created file is: a per-topic file or the meeting's transcript index."),
+});
+export type RunOutputEntry = z.infer<typeof runOutputEntrySchema>;
+
+/** Run-level data riding the per-topic contexts through each branch path to
+ * the collector (spec: run-level data threads through both branch paths).
+ * The extras are optional in the type only so the per-topic subworkflow —
+ * whose input is `topicContextSchema` — can still consume every item; the
+ * branch steps always fill them, and the per-topic steps never read them. */
+export const topicRunContextSchema = topicContextSchema.extend({
+  omittedTopics: z.array(classifiedTopicSchema).optional(),
+  singleTopic: z.string().nullable().optional(),
+});
+export type TopicRunContext = z.infer<typeof topicRunContextSchema>;
+
+/** What each branch path hands the collector: the created files plus the
+ * run-level data the transcript-index step needs (normalized transcript,
+ * recorded omissions, where the meeting directory lives, the single-topic
+ * gate). */
+export const branchRunSchema = z.object({
+  files: z.array(runOutputEntrySchema),
+  transcriptContent: z.string(),
+  omittedTopics: z.array(classifiedTopicSchema),
+  singleTopic: z.string().nullable(),
+  meetingDirectoryName: z.string(),
+  lineCount: z.number().int().nonnegative(),
+  meetingType: z.string(),
+});
+export type BranchRun = z.infer<typeof branchRunSchema>;
+
+/** Exact form of an action item's due date: an ISO calendar date, or the
+ * literal acknowledgment that none was stated. */
+const dueDateSchema = z
+  .union([z.string().regex(/^\d{4}-\d{2}-\d{2}$/), z.literal('unstated')])
+  .describe('When the deliverable is due, as YYYY-MM-DD; the literal string "unstated" when the meeting set no date.');
+
+/** An action item (GLOSSARY.md): defined by all four of assigner, assignee,
+ * due date (or explicitly unstated), and a clear deliverable — every field
+ * schema-required, so ownership is never ambiguous. */
+export const actionItemSchema = z.object({
+  assigner: z.string().min(1).describe('Who assigned the task in the meeting.'),
+  assignee: z.string().min(1).describe('Who is responsible for delivering it.'),
+  dueDate: dueDateSchema,
+  deliverable: z.string().min(1).describe('The concrete deliverable or outcome.'),
+});
+export type ActionItem = z.infer<typeof actionItemSchema>;
+
+/** A recurring theme (GLOSSARY.md): a subject surfacing across two or more
+ * topic files of one meeting — never itself a topic. The model names the
+ * topic files where it surfaces; code keeps only themes backed by at least
+ * two of the run's real topic files. */
+export const recurringThemeSchema = z.object({
+  theme: z.string().min(1).describe('The cross-cutting subject, in a few words.'),
+  topicFileNames: z
+    .array(z.string().min(1))
+    .describe('File names (without extension) of the topic files where the theme surfaces; at least two.'),
+});
+export type RecurringTheme = z.infer<typeof recurringThemeSchema>;
+
+/** An unresolved item (GLOSSARY.md): an open question or unsettled matter,
+ * cited to the transcript so it can be picked up where it was raised. */
+export const unresolvedItemSchema = z.object({
+  statement: z.string().min(1).describe('The open question or unsettled matter.'),
+  lineReferences: z.array(z.number().int().min(1)).describe('Numbered transcript lines where the matter was raised or left open.'),
+});
+export type UnresolvedItem = z.infer<typeof unresolvedItemSchema>;
+
+/** The one structured agent call behind the transcript index: the agent
+ * reads the topic files, the recorded omissions, and the normalized
+ * transcript, and returns every section except the wikilinked topic index
+ * (code builds that from the run's actual files) and the omissions (rendered
+ * from run data — code assigns all numbering). */
+export const topicIndexContentSchema = z.object({
+  title: z.string().min(1).describe("Descriptive title for this meeting's transcript index."),
+  executiveSummary: z.string().min(1).describe('A one-read catch-up of the whole meeting: a single prose paragraph, no citations.'),
+  recurringThemes: z.array(recurringThemeSchema),
+  decisions: z.array(citedPointSchema).describe('The decision log entries: statement + supporting quote + transcript lines.'),
+  actionItems: z.array(actionItemSchema),
+  unresolvedItems: z.array(unresolvedItemSchema),
+});
+export type TopicIndexContent = z.infer<typeof topicIndexContentSchema>;
+
+/** A recurring theme after code verified its file list: only real topic-file
+ * names of this run, deduplicated, at least two. */
+export const validatedRecurringThemeSchema = z.object({
+  theme: z.string(),
+  topicFileNames: z.array(z.string()),
+});
+export type ValidatedRecurringTheme = z.infer<typeof validatedRecurringThemeSchema>;
+
+/** An unresolved item after citation validation. */
+export const validatedUnresolvedItemSchema = z.object({
+  statement: z.string(),
+  lineReferences: z.array(z.number().int().min(1)),
+});
+export type ValidatedUnresolvedItem = z.infer<typeof validatedUnresolvedItemSchema>;
+
+/** The validated transcript index content the code-rendered markdown is
+ * assembled from — the index-side counterpart of `validatedTopicFileSchema`. */
+export const validatedTopicIndexSchema = z.object({
+  title: z.string(),
+  executiveSummary: z.string(),
+  recurringThemes: z.array(validatedRecurringThemeSchema),
+  decisions: z.array(validatedPointSchema),
+  actionItems: z.array(actionItemSchema),
+  unresolvedItems: z.array(validatedUnresolvedItemSchema),
+});
+export type ValidatedTopicIndex = z.infer<typeof validatedTopicIndexSchema>;
+
