@@ -60,31 +60,18 @@ export interface WebSearchChainResult {
   emptyReason?: WebSearchEmptyReason;
 }
 
+/**
+ * The chain's tunables that exist as injection seams, not production knobs:
+ * production callers pass nothing and every threshold comes from
+ * `search-thresholds.ts` (wave concurrency, result count, retry/backoff caps).
+ * `timeoutMs` keeps the timeout test off the real clock; `sleep` keeps the
+ * backoff tests off it.
+ */
 export interface SearchChainOptions {
-  /** Max concurrent searches (bounded waves). Default: SEARCH_WAVE_CONCURRENCY. */
-  concurrency?: number;
   /** Per-provider-attempt wall-clock budget in ms. Default: SEARCH_TIMEOUT_MS. */
   timeoutMs?: number;
-  /** Result count requested from each provider per query. Default: SEARCH_RESULTS_PER_QUERY. */
-  maxResults?: number;
-  /** 429 retries per provider before failover. Default: RATE_LIMIT_MAX_RETRIES. */
-  maxRetries?: number;
-  /** First 429 backoff delay in ms; later retries grow by backoffFactor. Default: RATE_LIMIT_BACKOFF_BASE_MS. */
-  backoffBaseMs?: number;
-  /** Multiplier for each subsequent 429 backoff delay. Default: RATE_LIMIT_BACKOFF_FACTOR. */
-  backoffFactor?: number;
   /** Backoff clock, injectable so tests never wait. Default: a real setTimeout sleep. */
   sleep?: (ms: number) => Promise<void>;
-}
-
-interface ResolvedOptions {
-  concurrency: number;
-  timeoutMs: number;
-  maxResults: number;
-  maxRetries: number;
-  backoffBaseMs: number;
-  backoffFactor: number;
-  sleep: (ms: number) => Promise<void>;
 }
 
 const NO_RESULTS_REASON = 'no results';
@@ -93,18 +80,6 @@ const defaultSleep = (ms: number) =>
   new Promise<void>((resolve) => {
     setTimeout(resolve, ms);
   });
-
-function resolveOptions(options: SearchChainOptions): ResolvedOptions {
-  return {
-    concurrency: options.concurrency ?? SEARCH_WAVE_CONCURRENCY,
-    timeoutMs: options.timeoutMs ?? SEARCH_TIMEOUT_MS,
-    maxResults: options.maxResults ?? SEARCH_RESULTS_PER_QUERY,
-    maxRetries: options.maxRetries ?? RATE_LIMIT_MAX_RETRIES,
-    backoffBaseMs: options.backoffBaseMs ?? RATE_LIMIT_BACKOFF_BASE_MS,
-    backoffFactor: options.backoffFactor ?? RATE_LIMIT_BACKOFF_FACTOR,
-    sleep: options.sleep ?? defaultSleep,
-  };
-}
 
 /**
  * Rejects with a descriptive error when `promise` outlives `timeoutMs`.
@@ -147,11 +122,14 @@ interface FailoverOutcome {
  * exponentially up to the retry cap and only then fails over; any other
  * failure fails over immediately. An empty-but-successful attempt also hands
  * off to the next provider so the chain is used fully before giving up.
+ * Thresholds come from `search-thresholds.ts`; only the timeout and the
+ * backoff clock arrive as injectable seams.
  */
 async function searchWithFailover(
   providers: readonly SearchProvider[],
   query: string,
-  options: ResolvedOptions,
+  timeoutMs: number,
+  sleep: (ms: number) => Promise<void>,
 ): Promise<FailoverOutcome> {
   const failures: SearchChainFailure[] = [];
 
@@ -159,18 +137,18 @@ async function searchWithFailover(
     let retries = 0;
     while (true) {
       const attempt: Promise<SearchResult[]> = Promise.resolve().then(() =>
-        provider.search({ query, maxResults: options.maxResults }),
+        provider.search({ query, maxResults: SEARCH_RESULTS_PER_QUERY }),
       );
       try {
-        const results = await withTimeout(attempt, options.timeoutMs, provider.id);
+        const results = await withTimeout(attempt, timeoutMs, provider.id);
         if (results.length > 0) {
           return { item: { query, results, providerId: provider.id }, failures };
         }
         failures.push({ providerId: provider.id, query, reason: NO_RESULTS_REASON });
         break;
       } catch (error) {
-        if (error instanceof RateLimitedSearchError && retries < options.maxRetries) {
-          await options.sleep(options.backoffBaseMs * options.backoffFactor ** retries);
+        if (error instanceof RateLimitedSearchError && retries < RATE_LIMIT_MAX_RETRIES) {
+          await sleep(RATE_LIMIT_BACKOFF_BASE_MS * RATE_LIMIT_BACKOFF_FACTOR ** retries);
           retries += 1;
           continue;
         }
@@ -214,11 +192,12 @@ export async function runWebSearchChain(
     return emptyChainResult(queries, 'no-providers-configured');
   }
 
-  const resolved = resolveOptions(options);
+  const timeoutMs = options.timeoutMs ?? SEARCH_TIMEOUT_MS;
+  const sleep = options.sleep ?? defaultSleep;
   const outcomes = await runInWaves(
     queries,
-    (query) => searchWithFailover(providers, query, resolved),
-    resolved.concurrency,
+    (query) => searchWithFailover(providers, query, timeoutMs, sleep),
+    SEARCH_WAVE_CONCURRENCY,
   );
 
   const items = outcomes.map((outcome) => outcome.item);

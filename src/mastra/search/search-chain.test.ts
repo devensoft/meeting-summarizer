@@ -6,6 +6,7 @@ import {
   RATE_LIMIT_BACKOFF_FACTOR,
   RATE_LIMIT_MAX_RETRIES,
   SEARCH_RESULTS_PER_QUERY,
+  SEARCH_WAVE_CONCURRENCY,
 } from './search-thresholds';
 import { runWebSearchChain } from './search-chain';
 
@@ -167,7 +168,7 @@ describe('runWebSearchChain', () => {
     expect(outcome.failures[0]!.reason).toBe('sync boom');
   });
 
-  it('processes many queries in waves while preserving item order', async () => {
+  it('processes many queries in bounded waves while preserving item order', async () => {
     const queries = ['q1', 'q2', 'q3', 'q4', 'q5'];
     let inFlight = 0;
     let maxInFlight = 0;
@@ -179,23 +180,18 @@ describe('runWebSearchChain', () => {
       return [];
     });
 
-    const outcome = await runWebSearchChain([provider], queries, { concurrency: 2 });
+    const outcome = await runWebSearchChain([provider], queries);
 
     expect(outcome.items.map((item) => item.query)).toEqual(queries);
     expect(outcome.isEmpty).toBe(true);
     expect(outcome.emptyReason).toBe('no-results');
-    expect(maxInFlight).toBe(2);
+    // Parallelism is bounded at the named constant — more queries than the
+    // cap run in waves, never all at once.
+    expect(maxInFlight).toBe(SEARCH_WAVE_CONCURRENCY);
+    expect(maxInFlight).toBeLessThan(queries.length);
   });
 
   it('asks each provider for the configured number of results', async () => {
-    const provider = new MockSearchProvider('composio:tavily', empty);
-
-    await runWebSearchChain([provider], ['q1'], { maxResults: 5 });
-
-    expect(provider.calls[0]).toEqual({ query: 'q1', maxResults: 5 });
-  });
-
-  it('defaults the per-provider result request to the named constant', async () => {
     const provider = new MockSearchProvider('composio:tavily', okFor);
 
     await runWebSearchChain([provider], ['q1']);
