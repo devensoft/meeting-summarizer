@@ -97,17 +97,21 @@ export function resolveEnrichedConcepts(
   return resolved;
 }
 
-function selectSearchedLinks(
+/** Collects proposed links up to `ENRICHED_CONCEPTS_MAX_LINKS` through one
+ * resolver: a proposed link maps to the link that is emitted, or to
+ * `undefined` when it is rejected. Both provenance paths share this loop;
+ * only the resolver differs. */
+function collectCappedLinks(
   proposedLinks: readonly { title: string; url: string }[],
-  results: readonly { title: string; url: string }[],
+  resolveLink: (link: { title: string; url: string }) => { title: string; url: string } | undefined,
 ): EnrichedConcept['links'] {
-  const resultsByUrl = new Map(results.map((result) => [result.url, result]));
   const links: EnrichedConcept['links'] = [];
   for (const link of proposedLinks) {
-    const result = resultsByUrl.get(link.url);
-    if (result) {
-      links.push({ title: result.title, url: result.url });
+    const resolved = resolveLink(link);
+    if (resolved === undefined) {
+      continue;
     }
+    links.push(resolved);
     if (links.length === ENRICHED_CONCEPTS_MAX_LINKS) {
       break;
     }
@@ -115,17 +119,21 @@ function selectSearchedLinks(
   return links;
 }
 
+function selectSearchedLinks(
+  proposedLinks: readonly { title: string; url: string }[],
+  results: readonly { title: string; url: string }[],
+): EnrichedConcept['links'] {
+  const resultsByUrl = new Map(results.map((result) => [result.url, result]));
+  return collectCappedLinks(proposedLinks, (link) => {
+    const result = resultsByUrl.get(link.url);
+    return result ? { title: result.title, url: result.url } : undefined;
+  });
+}
+
 function selectModelLinks(proposedLinks: readonly { title: string; url: string }[]): EnrichedConcept['links'] {
-  const links: EnrichedConcept['links'] = [];
-  for (const link of proposedLinks) {
-    if (isWellFormedHttpUrl(link.url)) {
-      links.push({ title: link.title, url: link.url });
-    }
-    if (links.length === ENRICHED_CONCEPTS_MAX_LINKS) {
-      break;
-    }
-  }
-  return links;
+  return collectCappedLinks(proposedLinks, (link) =>
+    isWellFormedHttpUrl(link.url) ? { title: link.title, url: link.url } : undefined,
+  );
 }
 
 function isWellFormedHttpUrl(url: string): boolean {
