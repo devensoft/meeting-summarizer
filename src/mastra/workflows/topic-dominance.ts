@@ -16,7 +16,13 @@ import { SHORT_MEETING_MAX_SECONDS, TOPIC_DOMINANCE_THRESHOLD } from './constant
 
 /** Shares of the transcript's lines a topic holds: the overlap-deduplicated
  * union of its ranges over `lineCount`. Ranges are clamped into
- * `1..lineCount`; ranges that fall outside or invert contribute nothing. */
+ * `1..lineCount`; ranges that fall outside or invert contribute nothing.
+ *
+ * Shares are normalized per topic — each topic's share is computed over its
+ * own deduped union — so two topics covering the same lines both count them
+ * and the shares of overlapping topics can sum above 1.0 by design. A share
+ * answers "how much of the meeting did this topic hold", not "what fraction
+ * of the meeting is this topic's alone". */
 export function airTimeShare(lineRanges: LineRange[], lineCount: number): number {
   if (lineCount <= 0 || lineRanges.length === 0) {
     return 0;

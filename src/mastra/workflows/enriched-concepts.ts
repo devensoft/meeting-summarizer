@@ -1,6 +1,7 @@
 import { ENRICHED_CONCEPTS_MAX_CANDIDATES, ENRICHED_CONCEPTS_MAX_LINKS } from './constants';
 import type { ConceptCandidate, ConceptProposal, ConceptSearchItem, EnrichedConcept } from './ingestion-wf.schemas';
 import type { WebSearchChainResult } from '../search/search-chain';
+import { dedupeByTrimmedLowerCaseKey } from '../../common/utils';
 
 /**
  * Enriched-concepts determinism (spec: "Enriched Concepts grounding").
@@ -18,21 +19,9 @@ import type { WebSearchChainResult } from '../search/search-chain';
  * `ENRICHED_CONCEPTS_MAX_CANDIDATES` — the cap is enforced here, by code,
  * never by prompt compliance. */
 export function selectConceptCandidates(candidates: readonly ConceptCandidate[]): ConceptCandidate[] {
-  const seen = new Set<string>();
-  const unique: ConceptCandidate[] = [];
-  for (const candidate of candidates) {
-    const mention = candidate.informalMention.trim();
-    if (mention === '') {
-      continue;
-    }
-    const key = mention.toLowerCase();
-    if (seen.has(key)) {
-      continue;
-    }
-    seen.add(key);
-    unique.push({ informalMention: mention });
-  }
-  return unique.slice(0, ENRICHED_CONCEPTS_MAX_CANDIDATES);
+  return dedupeByTrimmedLowerCaseKey(candidates, (candidate) => candidate.informalMention)
+    .slice(0, ENRICHED_CONCEPTS_MAX_CANDIDATES)
+    .map((candidate) => ({ informalMention: candidate.informalMention.trim() }));
 }
 
 /** Runs the concept searches through one injected boundary. Production passes
@@ -68,8 +57,10 @@ export async function searchEnrichedConcepts(
  *
  * Provenance is a code decision, taken per concept from the search chain:
  * results found → `web-search`, and only links whose URL matches a searched
- * result survive (matched to the canonical result title and URL, so the
- * label stays honest); no results → `model-suggested`, where the model's own
+ * result survive — matched by normalized URL (case of scheme/host, default
+ * ports, trailing slash, and fragments are cosmetic; query strings are not)
+ * and emitted with the canonical result's title and URL, so the label stays
+ * honest; no results → `model-suggested`, where the model's own
  * links are allowed but must be well-formed http(s) URLs. Either way the
  * link list is capped at `ENRICHED_CONCEPTS_MAX_LINKS`. Concepts are output
  * in candidate (search) order; a proposal with no matching candidate, or a
@@ -78,13 +69,13 @@ export function resolveEnrichedConcepts(
   searches: readonly ConceptSearchItem[],
   proposals: readonly ConceptProposal[],
 ): EnrichedConcept[] {
-  const proposalsByMention = new Map<string, ConceptProposal>();
-  for (const proposal of proposals) {
-    const key = proposal.informalMention.trim().toLowerCase();
-    if (!proposalsByMention.has(key)) {
-      proposalsByMention.set(key, proposal);
-    }
-  }
+  // The shared dedupe rule indexes the proposals: first mention wins, so a
+  // repeated informal mention can never swap which proposal a search binds to.
+  const proposalsByMention = new Map(
+    dedupeByTrimmedLowerCaseKey(proposals, (proposal) => proposal.informalMention).map(
+      (proposal): [string, ConceptProposal] => [proposal.informalMention.trim().toLowerCase(), proposal],
+    ),
+  );
 
   const resolved: EnrichedConcept[] = [];
   for (const search of searches) {
@@ -108,17 +99,21 @@ export function resolveEnrichedConcepts(
   return resolved;
 }
 
-function selectSearchedLinks(
+/** Collects proposed links up to `ENRICHED_CONCEPTS_MAX_LINKS` through one
+ * resolver: a proposed link maps to the link that is emitted, or to
+ * `undefined` when it is rejected. Both provenance paths share this loop;
+ * only the resolver differs. */
+function collectCappedLinks(
   proposedLinks: readonly { title: string; url: string }[],
-  results: readonly { title: string; url: string }[],
+  resolveLink: (link: { title: string; url: string }) => { title: string; url: string } | undefined,
 ): EnrichedConcept['links'] {
-  const resultsByUrl = new Map(results.map((result) => [result.url, result]));
   const links: EnrichedConcept['links'] = [];
   for (const link of proposedLinks) {
-    const result = resultsByUrl.get(link.url);
-    if (result) {
-      links.push({ title: result.title, url: result.url });
+    const resolved = resolveLink(link);
+    if (resolved === undefined) {
+      continue;
     }
+    links.push(resolved);
     if (links.length === ENRICHED_CONCEPTS_MAX_LINKS) {
       break;
     }
@@ -126,17 +121,65 @@ function selectSearchedLinks(
   return links;
 }
 
-function selectModelLinks(proposedLinks: readonly { title: string; url: string }[]): EnrichedConcept['links'] {
-  const links: EnrichedConcept['links'] = [];
-  for (const link of proposedLinks) {
-    if (isWellFormedHttpUrl(link.url)) {
-      links.push({ title: link.title, url: link.url });
-    }
-    if (links.length === ENRICHED_CONCEPTS_MAX_LINKS) {
-      break;
+function selectSearchedLinks(
+  proposedLinks: readonly { title: string; url: string }[],
+  results: readonly { title: string; url: string }[],
+): EnrichedConcept['links'] {
+  const resultsByUrl = new Map<string, { title: string; url: string }>();
+  for (const result of results) {
+    const key = normalizeUrlForMatch(result.url);
+    if (key !== undefined && !resultsByUrl.has(key)) {
+      resultsByUrl.set(key, result);
     }
   }
-  return links;
+
+  const matched = new Set<string>();
+  return collectCappedLinks(proposedLinks, (link) => {
+    const key = normalizeUrlForMatch(link.url);
+    if (key === undefined) {
+      return undefined;
+    }
+    const result = resultsByUrl.get(key);
+    if (result === undefined || matched.has(key)) {
+      return undefined;
+    }
+    matched.add(key);
+    // The canonical result's own title and URL render, so the label stays
+    // honest even when the proposal's spelling differed cosmetically.
+    return { title: result.title, url: result.url };
+  });
+}
+
+/** Canonical form for deciding whether a proposed link is one the chain
+ * actually returned: scheme and host lowercased, fragment dropped, default
+ * ports (80/443) dropped, and a single trailing slash on the path dropped.
+ * The query string is preserved — a link must not smuggle itself in through
+ * a tracking parameter the returned URL never had. */
+function normalizeUrlForMatch(url: string): string | undefined {
+  let parsed: URL;
+  try {
+    parsed = new URL(url.trim());
+  } catch {
+    return undefined;
+  }
+
+  const scheme = parsed.protocol.replace(/:$/, '').toLowerCase();
+  if (scheme !== 'http' && scheme !== 'https') {
+    return undefined;
+  }
+
+  const host = parsed.hostname.toLowerCase();
+  const isDefaultPort = (scheme === 'http' && parsed.port === '80') || (scheme === 'https' && parsed.port === '443');
+  const port = isDefaultPort ? '' : parsed.port;
+  const pathWithSlashStripped = parsed.pathname.replace(/\/$/, '');
+
+  return `${scheme}://${host}${port === '' ? '' : `:${port}`}${pathWithSlashStripped}${parsed.search}`;
+}
+
+function selectModelLinks(proposedLinks: readonly { title: string; url: string }[]): EnrichedConcept['links'] {
+  return collectCappedLinks(proposedLinks, (link) =>
+    isWellFormedHttpUrl(link.url) ? { title: link.title, url: link.url } : undefined,
+  );
 }
 
 function isWellFormedHttpUrl(url: string): boolean {

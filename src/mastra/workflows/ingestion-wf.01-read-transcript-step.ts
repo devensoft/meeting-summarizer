@@ -4,7 +4,7 @@ import { createStep } from '@mastra/core/workflows';
 import { inputFileSchema, transcriptSchema } from './ingestion-wf.schemas';
 import { NORMALIZED_TRANSCRIPT_SUFFIX } from './constants';
 import { detectTranscriptFormat, normalizeTranscript } from './transcript-normalizer';
-import { resolveFromRoot, resolveProjectRoot } from '../../common/utils';
+import { resolveFromRoot, resolveProjectRoot, resolveWithinDirectory } from '../../common/utils';
 import { readMeetingContext } from '../meeting-context';
 
 /** Kebab-cases a user-supplied series name for use as a directory segment;
@@ -35,6 +35,14 @@ export const readTranscriptStep = createStep({
       throw new Error('Mastra workspace is not configured.');
     }
 
+    // Filesystem rule: paths built from user/workflow input resolve through
+    // the shared helpers before any workspace call — resolveWithinDirectory,
+    // anchored at the workspace root, rejects anything that would escape it
+    // before anything is written.
+    const workspaceRoot = resolveFromRoot(projectRoot, '.workspace');
+    const withinWorkspace = (workspacePath: string) =>
+      path.relative(workspaceRoot, resolveWithinDirectory(workspaceRoot, workspacePath));
+
     const inputBaseName = path.basename(inputFilePath);
     const stem = path.basename(inputFilePath, path.extname(inputFilePath));
     const baseName = `${stem}-${Date.now()}`;
@@ -42,12 +50,15 @@ export const readTranscriptStep = createStep({
     // A series name nests the run under meetings/<series>/<transcript>, so the
     // series is visible from the workspace layout alone.
     const outputDirName = seriesSlug ? path.join(seriesSlug, baseName) : baseName;
-    const meetingDirectory = path.join('meetings', outputDirName);
+    const meetingDirectory = withinWorkspace(path.join('meetings', outputDirName));
     await workspace.mkdir(meetingDirectory, { recursive: true });
     // The original stays untouched; the normalized transcript beside it is the
     // citation target every generated note refers to.
-    await workspace.writeFile(path.join(meetingDirectory, inputBaseName), transcriptContent);
-    await workspace.writeFile(path.join(meetingDirectory, `${stem}${NORMALIZED_TRANSCRIPT_SUFFIX}`), normalized.content);
+    await workspace.writeFile(withinWorkspace(path.join(meetingDirectory, inputBaseName)), transcriptContent);
+    await workspace.writeFile(
+      withinWorkspace(path.join(meetingDirectory, `${stem}${NORMALIZED_TRANSCRIPT_SUFFIX}`)),
+      normalized.content,
+    );
 
     const meetingContext = readMeetingContext(requestContext);
 

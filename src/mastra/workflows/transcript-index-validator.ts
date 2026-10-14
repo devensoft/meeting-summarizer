@@ -5,7 +5,8 @@ import type {
   ValidatedUnresolvedItem,
 } from './ingestion-wf.schemas';
 import { INDEX_TITLE_FALLBACK } from './constants';
-import { stripInlineReferences, validateCitedPoints, validateLineReferences } from './citation-validator';
+import { stripInlineReferences, validateCitedPoints, validateLineReferences, type CitationTarget } from './citation-validator';
+import { dedupeByTrimmedLowerCaseKey } from '../../common/utils';
 
 /**
  * Citation and honesty discipline for the transcript index (spec: "Transcript
@@ -28,7 +29,7 @@ import { stripInlineReferences, validateCitedPoints, validateLineReferences } fr
 /** Validates the index agent's structured output for one multi-topic run. */
 export function validateTopicIndexContent(
   content: TopicIndexContent,
-  citationTarget: { lineCount: number; transcriptContent: string },
+  citationTarget: CitationTarget,
   topicFileNames: string[],
 ): ValidatedTopicIndex {
   return {
@@ -66,17 +67,18 @@ function validateRecurringThemes(
 
 /** Matches the theme's file references against the run's real topic files —
  * case-insensitively, tolerating a `.md` suffix — and returns the canonical
- * names, deduplicated, in first-mentioned order. */
+ * names, deduplicated by the shared first-entry-wins rule, in first-mentioned
+ * order. */
 function resolveThemeFiles(referencedFileNames: string[], known: Map<string, string>): string[] {
-  const resolved = new Set<string>();
+  const resolved: string[] = [];
   for (const referencedName of referencedFileNames) {
     const stem = referencedName.trim().replace(/\.md$/i, '');
     const canonical = known.get(stem.toLowerCase());
     if (canonical !== undefined) {
-      resolved.add(canonical);
+      resolved.push(canonical);
     }
   }
-  return [...resolved];
+  return dedupeByTrimmedLowerCaseKey(resolved, (canonicalName) => canonicalName);
 }
 
 function validateActionItems(items: ActionItem[]): ActionItem[] {
@@ -96,7 +98,7 @@ function validateActionItems(items: ActionItem[]): ActionItem[] {
 
 function validateUnresolvedItems(
   items: TopicIndexContent['unresolvedItems'],
-  citationTarget: { lineCount: number; transcriptContent: string },
+  citationTarget: CitationTarget,
 ): ValidatedUnresolvedItem[] {
   const validated: ValidatedUnresolvedItem[] = [];
   for (const item of items) {

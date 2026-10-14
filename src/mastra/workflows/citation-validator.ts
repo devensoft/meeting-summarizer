@@ -15,6 +15,17 @@ import type { CitedPoint, CitedTopicContent, ValidatedPoint } from './ingestion-
 /** Pattern of an inline `(Lnn)` citation token leaked into a statement. */
 const INLINE_REFERENCE_PATTERN = /\(\s*L\d+\s*\)/gi;
 
+/**
+ * The normalized transcript citations are checked against (GLOSSARY.md:
+ * "citation target") — its numbered text plus its line count, carried as data
+ * from the read step and never recomputed. The clump travels together
+ * through every citation-checking signature, so it has a name.
+ */
+export interface CitationTarget {
+  transcriptContent: string;
+  lineCount: number;
+}
+
 /** A cited topic content with every reference and quote checked. */
 export interface ValidatedCitedTopic {
   title: string;
@@ -61,10 +72,7 @@ function normalizeForQuoteMatch(text: string): string {
  * are validated like any other section (whether the section renders is the
  * renderer's meeting-context decision, not a citation matter).
  */
-export function validateCitedTopic(
-  content: CitedTopicContent,
-  citationTarget: { lineCount: number; transcriptContent: string },
-): ValidatedCitedTopic {
+export function validateCitedTopic(content: CitedTopicContent, citationTarget: CitationTarget): ValidatedCitedTopic {
   return {
     title: content.title.trim(),
     summary: validateCitedPoints(content.summary, citationTarget),
@@ -77,7 +85,7 @@ export function validateCitedTopic(
  * `validateCitedTopic` applies to each topic-file section, exported for the
  * transcript index's decision log (GLOSSARY.md: a decision record carries a
  * supporting quote and transcript line reference, verified like any note). */
-export function validateCitedPoints(points: CitedPoint[], citationTarget: { lineCount: number; transcriptContent: string }): ValidatedPoint[] {
+export function validateCitedPoints(points: CitedPoint[], citationTarget: CitationTarget): ValidatedPoint[] {
   const validated: ValidatedPoint[] = [];
   for (const point of points) {
     const statement = stripInlineReferences(point.statement);

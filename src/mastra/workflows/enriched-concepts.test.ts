@@ -193,6 +193,44 @@ describe('resolveEnrichedConcepts', () => {
     ]);
   });
 
+  it('matches a searched link by normalized URL — scheme/host case, default port, and one trailing slash are cosmetic', () => {
+    const searches = [
+      searchItem('five whys', [result('Five whys — Wikipedia', 'https://en.wikipedia.org/wiki/Five_whys')]),
+    ];
+
+    const concepts = resolveEnrichedConcepts(
+      searches,
+      [proposal('five whys', [
+        { title: 'scheme and host case', url: 'HTTPS://EN.Wikipedia.org/wiki/Five_whys' },
+        { title: 'default port', url: 'https://en.wikipedia.org:443/wiki/Five_whys' },
+        { title: 'trailing slash', url: 'https://en.wikipedia.org/wiki/Five_whys/' },
+      ])],
+    );
+
+    expect(concepts[0]?.grounding).toBe('web-search');
+    // Every variant matches the same returned page: the canonical result's own
+    // title and URL are what render, and the same page never renders twice.
+    expect(concepts[0]?.links).toEqual([
+      { title: 'Five whys — Wikipedia', url: 'https://en.wikipedia.org/wiki/Five_whys' },
+    ]);
+  });
+
+  it('still rejects a link the chain did not return, even when only the query string differs', () => {
+    const searches = [
+      searchItem('five whys', [result('Five whys — Wikipedia', 'https://en.wikipedia.org/wiki/Five_whys')]),
+    ];
+
+    const concepts = resolveEnrichedConcepts(
+      searches,
+      [proposal('five whys', [
+        { title: 'tracking params', url: 'https://en.wikipedia.org/wiki/Five_whys?utm_source=model' },
+      ])],
+    );
+
+    expect(concepts[0]?.grounding).toBe('web-search');
+    expect(concepts[0]?.links).toEqual([]);
+  });
+
   it('labels an unsearched concept "model-suggested" and keeps only well-formed model links', () => {
     const searches = [searchItem('blameless postmortem', [])];
 

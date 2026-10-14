@@ -33,6 +33,11 @@ export function toSearchResult(
   };
 }
 
+/** Narrows to a plain object record — `null` and arrays are not records. */
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
 function firstString(record: Record<string, unknown>, keys: readonly string[]): string | undefined {
   for (const key of keys) {
     const value = record[key];
@@ -52,9 +57,14 @@ function snippetFromEntry(entry: Record<string, unknown>): string | undefined {
 
 function recordArray(value: unknown): Record<string, unknown>[] {
   if (!Array.isArray(value)) return [];
-  return value.filter((entry): entry is Record<string, unknown> => {
-    return typeof entry === 'object' && entry !== null && !Array.isArray(entry);
-  });
+  return value.filter((entry): entry is Record<string, unknown> => isRecord(entry));
+}
+
+/** Maps one payload record's `results` array through `toSearchResult`. */
+function resultsFrom(record: Record<string, unknown>): SearchResult[] {
+  return recordArray(record['results'])
+    .map((entry) => toSearchResult(entry['title'], entry['url'], snippetFromEntry(entry)))
+    .filter((result): result is SearchResult => result !== undefined);
 }
 
 /**
@@ -65,30 +75,13 @@ function recordArray(value: unknown): Record<string, unknown>[] {
  * Anything unrecognizable yields an empty array — extraction never throws.
  */
 export function extractSearchResults(payload: unknown): SearchResult[] {
-  const data =
-    typeof payload === 'object' && payload !== null && !Array.isArray(payload)
-      ? (payload as Record<string, unknown>)
-      : {};
-  const unwrapped =
-    typeof data['data'] === 'object' && data['data'] !== null && !Array.isArray(data['data'])
-      ? (data['data'] as Record<string, unknown>)
-      : data;
+  const data = isRecord(payload) ? payload : {};
+  const unwrapped = isRecord(data['data']) ? data['data'] : data;
 
-  const results = recordArray(unwrapped['results']);
-  if (results.length === 0) {
-    const responseData = recordArray(
-      typeof unwrapped['response_data'] === 'object' &&
-        unwrapped['response_data'] !== null &&
-        !Array.isArray(unwrapped['response_data'])
-        ? (unwrapped['response_data'] as Record<string, unknown>)['results']
-        : undefined,
-    );
-    return responseData
-      .map((entry) => toSearchResult(entry['title'], entry['url'], snippetFromEntry(entry)))
-      .filter((result): result is SearchResult => result !== undefined);
+  const results = resultsFrom(unwrapped);
+  if (results.length > 0) {
+    return results;
   }
 
-  return results
-    .map((entry) => toSearchResult(entry['title'], entry['url'], snippetFromEntry(entry)))
-    .filter((result): result is SearchResult => result !== undefined);
+  return isRecord(unwrapped['response_data']) ? resultsFrom(unwrapped['response_data']) : [];
 }

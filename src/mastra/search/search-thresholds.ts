@@ -28,5 +28,11 @@ export const RATE_LIMIT_BACKOFF_FACTOR = 2;
 /** Maximum number of results requested from a provider for one query. */
 export const SEARCH_RESULTS_PER_QUERY = 3;
 
-/** Maximum number of queries accepted in a single web-search call (tool input bound). */
+/**
+ * Maximum number of queries accepted in a single web-search call — the input
+ * bound of the registered `web-search` tool. An internal guardrail, not a
+ * pipeline budget: the enriched-concepts pipeline sends at most one query per
+ * candidate (candidates are capped at `ENRICHED_CONCEPTS_MAX_CANDIDATES`),
+ * but the tool is directly callable with an arbitrary query list.
+ */
 export const MAX_WEB_SEARCH_QUERIES = 25;

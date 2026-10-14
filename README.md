@@ -44,7 +44,7 @@ Every topic file follows one fixed structure — **Title, Summary, Key Insights,
 - Every `(Lnn)` reference is validated against the transcript; out-of-range references are stripped.
 - Direct quotes are verified against the normalized transcript (whitespace/case-insensitive) and render as quotations; unverifiable ones render unquoted.
 - **Contextual Highlights** appears only when meeting-series context was provided for the run; the section is omitted entirely otherwise.
-- **Enriched Concepts** appears only when the topic proposed candidates. A structured call proposes casually-mentioned concepts (capped at ten per topic by code), each is searched through the provider chain, and a second structured call writes the blurb tying the informal mention to its formal foundation and picks one to three links. Every concept carries a provenance label: `Grounding: web search` when the chain found results (only pages the chain actually returned can be linked), or `Grounding: model-suggested (unverified)` when it found nothing — the one case where model-proposed links are accepted, so the formal term stands even without search.
+- **Enriched Concepts** appears only when the topic proposed candidates. A structured call proposes casually-mentioned concepts (capped at ten per topic by code), each is searched through the provider chain, and a second structured call writes the blurb tying the informal mention to its formal foundation and picks one to three links. Every concept carries a provenance label: `Grounding: web search` when the chain found results (only pages the chain actually returned can be linked — matched by normalized URL, so scheme/host case, default ports, and a trailing slash don't block a match, while a changed query string still does), or `Grounding: model-suggested (unverified)` when it found nothing — the one case where model-proposed links are accepted, so the formal term stands even without search. A searched concept the model linked wrong renders an explicit `(no links returned)` note rather than silently showing nothing.
 - File names are slugified from the title by code, with `-2`, `-3`, … suffixes when a same-run file already holds the name.
 
 ## Transcript index
@@ -62,7 +62,7 @@ One structured agent call reads the written topic files (from disk), the recorde
 7. **Unresolved items** — open matters with the lines where they were left.
 8. **Topic omissions** — the first place omissions render: numbered, each with its transcript line ranges.
 
-Every empty section is omitted entirely — no empty headers. The workflow's run report distinguishes the two document kinds with a `kind` discriminator on each entry: `topic` for topic files, `index` for the transcript index.
+All eight section headers always render, in fixed order — a section with nothing to show carries an explicit `_None recorded._` marker under its header instead of disappearing, so an empty section is distinguishable from a missing one. The workflow's run report distinguishes the two document kinds with a `kind` discriminator on each entry: `topic` for topic files, `index` for the transcript index.
 
 ## Quickstart
 
@@ -135,6 +135,12 @@ tool: sessions run the direct-tools preset with a fixed allowlist of exactly
   | `RATE_LIMIT_BACKOFF_FACTOR` | 2 |
   | `SEARCH_RESULTS_PER_QUERY` | 3 |
   | `MAX_WEB_SEARCH_QUERIES` | 25 |
+
+  `MAX_WEB_SEARCH_QUERIES` is an internal guardrail, not a pipeline budget: it
+  bounds the input of the registered `web-search` tool, which is directly
+  callable (from Studio or a model) with an arbitrary query list. The
+  enriched-concepts pipeline itself sends at most one query per concept — ten
+  per topic — so the cap never engages there.
 
 ### Optional live smoke search
 

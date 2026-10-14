@@ -203,4 +203,12 @@ describe('renderTopicFile', () => {
     expect(markdown).toContain('  Grounding: model-suggested (unverified)');
     expect(markdown).not.toContain('](');
   });
+
+  it('notes a searched concept left with zero links after matching, instead of showing nothing after its label', () => {
+    const markdown = renderTopicFile(
+      topicFile({ enrichedConcepts: [concept({ grounding: 'web-search', links: [] })] }),
+    );
+
+    expect(markdown).toContain('  Grounding: web search\n  (no links returned)');
+  });
 });

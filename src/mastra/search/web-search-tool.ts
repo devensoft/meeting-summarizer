@@ -4,6 +4,7 @@ import { createComposioSearchProvider } from './composio-search-provider';
 import {
   emptyChainResult,
   runWebSearchChain,
+  WEB_SEARCH_EMPTY_REASONS,
   type WebSearchChainResult,
   type WebSearchEmptyReason,
 } from './search-chain';
@@ -25,12 +26,9 @@ import {
  * exhausted chain yields an explicit empty result.
  */
 
-const emptyReasonSchema = z.enum([
-  'no-providers-configured',
-  'composio-api-key-missing',
-  'chain-exhausted',
-  'no-results',
-]);
+// Derived from the chain's own reason list, so the four literals exist once
+// (search-chain.ts) and the tool's output schema can never drift from it.
+const emptyReasonSchema = z.enum(WEB_SEARCH_EMPTY_REASONS);
 
 export const webSearchResultSchema = z.object({
   title: z.string().describe('Result page title; empty string when the provider supplied none.'),
