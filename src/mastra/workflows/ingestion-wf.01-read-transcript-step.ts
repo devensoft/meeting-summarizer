@@ -49,13 +49,16 @@ export const readTranscriptStep = createStep({
     await workspace.writeFile(path.join(meetingDirectory, inputBaseName), transcriptContent);
     await workspace.writeFile(path.join(meetingDirectory, `${stem}${NORMALIZED_TRANSCRIPT_SUFFIX}`), normalized.content);
 
+    const meetingContext = readMeetingContext(requestContext);
+
     return {
       meetingDirectoryName: outputDirName,
       isValidTranscript: normalized.lineCount > 0,
       transcriptContent: normalized.content,
       durationSeconds: normalized.durationSeconds,
       lineCount: normalized.lineCount,
-      meetingType: readMeetingContext(requestContext).meetingType ?? 'general',
+      meetingType: meetingContext.meetingType ?? 'general',
+      meetingContext: meetingContext.meetingContext ?? null,
     };
   },
 });

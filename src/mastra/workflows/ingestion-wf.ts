@@ -17,6 +17,8 @@ const singleTopicPath = createWorkflow({
     durationSeconds: inputData.durationSeconds,
     lineCount: inputData.lineCount,
     meetingDirectoryName: inputData.meetingDirectoryName,
+    meetingType: inputData.meetingType,
+    meetingContext: inputData.meetingContext,
   }))
   .then(perTopicSubworkflow)
   .commit();
@@ -34,6 +36,8 @@ const multipleTopicsPath = createWorkflow({
       durationSeconds: inputData.durationSeconds,
       lineCount: inputData.lineCount,
       meetingDirectoryName: inputData.meetingDirectoryName,
+      meetingType: inputData.meetingType,
+      meetingContext: inputData.meetingContext,
     })),
   )
   .foreach(perTopicSubworkflow, { concurrency: 4 })
