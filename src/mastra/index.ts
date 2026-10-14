@@ -9,6 +9,7 @@ import { FileTransport } from '@mastra/loggers/file';
 import { DuckDBStore } from '@mastra/duckdb';
 import { Observability, MastraStorageExporter } from '@mastra/observability';
 import { ingestionWorkflow } from './workflows/ingestion-wf';
+import { webSearchTool } from './search/web-search-tool';
 import { resolveProjectRoot } from '../common/utils';
 
 // Data files must live OUTSIDE src/mastra/public (that directory is copied into
@@ -77,6 +78,7 @@ const workspace = new Workspace({
 // and registered by the bundler (see src/mastra/agents/meeting-master/).
 export const mastra = new Mastra({
   workflows: { ingestionWorkflow },
+  tools: { webSearchTool },
   storage,
   observability,
   logger,
