@@ -13,7 +13,7 @@ export const classifyTopicsStep = createStep({
   description: 'Identify unique topics, record topic omissions, and preserve the transcript for downstream processing.',
   inputSchema: transcriptSchema,
   outputSchema: topicResultSchema,
-  execute: async ({ inputData: { transcriptContent, isValidTranscript, meetingType }, mastra, getStepResult, requestContext }) => {
+  execute: async ({ inputData: { transcriptContent, isValidTranscript, meetingType, durationSeconds, lineCount }, mastra, getStepResult, requestContext }) => {
     if (!isValidTranscript) {
       throw new Error('Invalid transcript');
     }
@@ -42,6 +42,8 @@ export const classifyTopicsStep = createStep({
       topics,
       omittedTopics,
       singleTopic: topics.length === 1 ? topics[0] : null,
+      durationSeconds,
+      lineCount,
       meetingDirectoryName,
     };
   },
