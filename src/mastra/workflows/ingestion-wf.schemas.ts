@@ -131,3 +131,59 @@ export const extractedTopicSchema = consolidatedTopicSchema.extend({
 export const enrichedTopicSchema = extractedTopicSchema.extend({
   enrichedSegments: z.array(segmentSchema),
 });
+export const distilledTopicSchema = validatedTopicFileSchema.extend({
+  transcriptContent: z
+    .string()
+    .describe('The normalized transcript again — the citation target the concept phases read.'),
+});
+export type DistilledTopic = z.infer<typeof distilledTopicSchema>;
+export const conceptCandidateSchema = z.object({
+  informalMention: z
+    .string()
+    .describe('A concept the discussion mentioned casually or informally, phrased so it doubles as a search query.'),
+});
+export type ConceptCandidate = z.infer<typeof conceptCandidateSchema>;
+export const proposedConceptCandidatesSchema = z.object({
+  concepts: z.array(conceptCandidateSchema),
+});
+export const conceptSearchResultSchema = z.object({
+  title: z.string(),
+  url: z.url({ protocol: /^https?$/ }).describe('Well-formed absolute http(s) link from the provider chain.'),
+  snippet: z.string(),
+});
+export const conceptSearchItemSchema = z.object({
+  informalMention: z.string(),
+  results: z.array(conceptSearchResultSchema),
+});
+export type ConceptSearchItem = z.infer<typeof conceptSearchItemSchema>;
+export const proposedConceptsSchema = distilledTopicSchema.extend({
+  conceptCandidates: z.array(conceptCandidateSchema),
+  conceptSearches: z.array(conceptSearchItemSchema),
+});
+export type ProposedConcepts = z.infer<typeof proposedConceptsSchema>;
+export const conceptProposalSchema = z.object({
+  informalMention: z.string(),
+  formalFoundation: z.string().describe('The formal, established name behind the informal mention.'),
+  blurb: z.string().describe('Short passage tying the informal mention to its formal foundation.'),
+  links: z.array(z.object({ title: z.string(), url: z.string() })),
+});
+export type ConceptProposal = z.infer<typeof conceptProposalSchema>;
+export const composedConceptsSchema = z.object({
+  concepts: z.array(conceptProposalSchema),
+});
+export const conceptLinkSchema = z.object({
+  title: z.string(),
+  url: z.url({ protocol: /^https?$/ }),
+});
+export const enrichedConceptSchema = z.object({
+  informalMention: z.string(),
+  formalFoundation: z.string(),
+  blurb: z.string(),
+  links: z.array(conceptLinkSchema),
+  grounding: z.enum(['web-search', 'model-suggested']),
+});
+export type EnrichedConcept = z.infer<typeof enrichedConceptSchema>;
+export const composedTopicFileSchema = proposedConceptsSchema.extend({
+  enrichedConcepts: z.array(enrichedConceptSchema),
+});
+export type ComposedTopicFile = z.infer<typeof composedTopicFileSchema>;

@@ -28,3 +28,10 @@ export const TOPIC_DOMINANCE_THRESHOLD = 0.8;
  * short-meeting bound. Only enforced when the parsed duration is known;
  * plain-text input carries null and skips the gate. */
 export const SHORT_MEETING_MAX_SECONDS = 3600;
+
+/** Maximum number of enriched-concept candidates one topic keeps. Enforced
+ * by code after the proposal call — never by prompt compliance. */
+export const ENRICHED_CONCEPTS_MAX_CANDIDATES = 10;
+
+/** Maximum number of reference links one enriched concept carries. */
+export const ENRICHED_CONCEPTS_MAX_LINKS = 3;
