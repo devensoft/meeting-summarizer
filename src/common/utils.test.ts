@@ -40,6 +40,63 @@ describe('resolveProjectRoot', () => {
 
     expect(() => resolveProjectRoot(orphan)).toThrow(/Could not find a package.json/);
   });
+
+  it('skips a directory whose path contains a .mastra segment even when it has a package.json', () => {
+    // Mirrors `mastra start`: the build output directory carries a
+    // build-generated package.json and lives under .mastra.
+    const buildOutput = path.join(tempRoot, '.mastra', 'output');
+    mkdirSync(buildOutput, { recursive: true });
+    writeFileSync(path.join(buildOutput, 'package.json'), '{}');
+
+    expect(resolveProjectRoot(buildOutput)).toBe(path.resolve(tempRoot));
+  });
+
+  describe('with PROJECT_ROOT set', () => {
+    const originalOverride = process.env.PROJECT_ROOT;
+
+    beforeEach(() => {
+      process.env.PROJECT_ROOT = '';
+    });
+
+    afterEach(() => {
+      if (originalOverride === undefined) {
+        delete process.env.PROJECT_ROOT;
+      } else {
+        process.env.PROJECT_ROOT = originalOverride;
+      }
+    });
+
+    it('honors a valid override without walking up', () => {
+      const otherRoot = mkdtempSync(path.join(os.tmpdir(), 'mastra-msr-other-'));
+      writeFileSync(path.join(otherRoot, 'package.json'), '{}');
+      try {
+        process.env.PROJECT_ROOT = otherRoot;
+        expect(resolveProjectRoot(tempRoot)).toBe(path.resolve(otherRoot));
+      } finally {
+        rmSync(otherRoot, { recursive: true, force: true });
+      }
+    });
+
+    it('fails fast when the override points at a missing directory', () => {
+      process.env.PROJECT_ROOT = path.join(tempRoot, 'does-not-exist');
+
+      expect(() => resolveProjectRoot(tempRoot)).toThrow(/PROJECT_ROOT/);
+    });
+
+    it('fails fast when the override has no package.json', () => {
+      const noMarker = path.join(tempRoot, 'no-marker');
+      mkdirSync(noMarker, { recursive: true });
+      process.env.PROJECT_ROOT = noMarker;
+
+      expect(() => resolveProjectRoot(tempRoot)).toThrow(/PROJECT_ROOT/);
+    });
+
+    it('falls back to the walk-up when the override is absent', () => {
+      delete process.env.PROJECT_ROOT;
+
+      expect(resolveProjectRoot(tempRoot)).toBe(path.resolve(tempRoot));
+    });
+  });
 });
 
 describe('resolveFromRoot', () => {

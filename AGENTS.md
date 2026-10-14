@@ -48,7 +48,7 @@ Facts that aren't visible from any single file:
 
 ## Filesystem rules
 
-- **All output paths are anchored to the project root**, found by walking up from `process.cwd()` until a `package.json` appears (`resolveProjectRoot` in `src/common/utils.ts`). This keeps output locations stable regardless of where the server was started.
+- **All output paths are anchored to the project root**, resolved by `resolveProjectRoot` in `src/common/utils.ts` (the tests in `utils.test.ts` pin its contract). Resolution is identical under `mastra dev` and `mastra start`: (1) a `PROJECT_ROOT` override is honored when it names an existing directory containing a `package.json` — anything else fails fast at boot with an error naming the variable; (2) otherwise a walk-up from `process.cwd()` finds the nearest `package.json`, skipping any directory whose path contains a `.mastra` segment (its `package.json` is build-generated, so `mastra start` would otherwise anchor inside the build output). The server logs the resolved root at boot; if dev and start disagree, look there.
 - **Every path built from user/workflow input goes through `resolveWithinDirectory`**, which rejects traversal outside its base directory. Route new file-handling through the helpers in `src/common/utils.ts` — the tests in `utils.test.ts` pin their behavior.
 - Workflow outputs land in `.workspace/meetings/<meetingDirectoryName>/` (gitignored). Local databases live in `.mastra/data/` (also gitignored): LibSQL for app data, DuckDB for observability. Both are disposable local state; treat `.mastra/` and `.workspace/` as never-commit.
 

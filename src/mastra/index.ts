@@ -13,8 +13,12 @@ import { resolveProjectRoot } from '../common/utils';
 
 // Data files must live OUTSIDE src/mastra/public (that directory is copied into
 // the build output and served statically). Anchor to the project root so the
-// location is independent of the terminal the server was started from.
-const dataDir = path.join(resolveProjectRoot(process.cwd()), '.mastra', 'data');
+// location is identical under `mastra dev` and `mastra start` — the resolver
+// skips build output under .mastra/ and honors a PROJECT_ROOT override. The
+// boot-time log line makes any dev/start anchoring drift visible immediately.
+const projectRoot = resolveProjectRoot(process.cwd());
+console.info(`[project-root] resolved project root: ${projectRoot}`);
+const dataDir = path.join(projectRoot, '.mastra', 'data');
 mkdirSync(dataDir, { recursive: true });
 
 // Composite storage: LibSQL for app data, DuckDB for the observability domain (traces + metrics aggregation)
@@ -64,7 +68,7 @@ const workspace = new Workspace({
   id: 'meeting-workspace',
   filesystem: new LocalFilesystem({
     id: 'meeting-workspace-fs',
-    basePath: path.join(resolveProjectRoot(process.cwd()), '.workspace'),
+    basePath: path.join(projectRoot, '.workspace'),
   }),
 });
 
