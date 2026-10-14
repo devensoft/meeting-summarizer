@@ -1,11 +1,14 @@
 import path from 'node:path';
 import { createStep } from '@mastra/core/workflows';
-import { segmentCreatedSchema, segmentFileSchema } from './ingestion-wf.schemas';
+import { segmentCreatedSchema, validatedTopicFileSchema } from './ingestion-wf.schemas';
+import { renderTopicFile } from './topic-file-renderer';
+import { resolveTopicFileName, slugifyTopicTitle } from './topic-file-name';
 
 export const writeSegmentFileStep = createStep({
   id: 'write-segment-file',
-  description: "Write the distilled topic document to the current meeting's workspace directory.",
-  inputSchema: segmentFileSchema,
+  description:
+    "Render the topic file's markdown in code and write it into the meeting's workspace directory under a slugified, collision-safe file name.",
+  inputSchema: validatedTopicFileSchema,
   outputSchema: segmentCreatedSchema,
   execute: async ({ mastra, inputData }) => {
     const { meetingDirectoryName } = inputData;
@@ -15,9 +18,14 @@ export const writeSegmentFileStep = createStep({
     }
 
     const meetingDirectory = path.join('meetings', meetingDirectoryName);
-    const outputFilePath = path.join(meetingDirectory, path.basename(inputData.filePath));
     await workspace.mkdir(meetingDirectory, { recursive: true });
-    await workspace.writeFile(outputFilePath, inputData.content);
+    // The file name comes from code, never the model: the slug of the
+    // validated title, suffixed when a same-run file already holds it.
+    const takenFileNames = (await workspace.readdir(meetingDirectory)).map((entry) => entry.name);
+    const fileName = resolveTopicFileName(slugifyTopicTitle(inputData.title), takenFileNames);
+    const outputFilePath = path.join(meetingDirectory, fileName);
+
+    await workspace.writeFile(outputFilePath, renderTopicFile(inputData));
     const { size } = await workspace.stat(outputFilePath);
     return {
       topic: inputData.topic,

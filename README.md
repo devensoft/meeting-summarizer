@@ -19,7 +19,7 @@ transcript ──▶ read ──▶ classify topics ──▶ ┌─ single them
 
 1. **Read & normalize** the transcript (plain text or WebVTT — see below).
 2. **Classify** it: one overarching theme, or several distinct topics.
-3. **Per topic**, a subworkflow consolidates the relevant content, extracts key segments, enriches them, and distills everything into a polished topic document.
+3. **Per topic**, a subworkflow consolidates the relevant content, extracts key segments, enriches them, and distills everything into a structured topic file — assembled by code, never free-form model markdown (see below).
 4. **Collect** — all topic documents are written to a per-meeting output folder and reported back with their paths and sizes.
 
 The whole flow is observable: every run is traced and spans are persisted, so you can inspect exactly what the model did in Mastra Studio.
@@ -32,6 +32,15 @@ Every meeting directory holds two files: the **untouched original upload** and t
 - **Plain text** — passes through verbatim, line for line, and *is* its own citation target. Plain-text runs record no duration.
 
 Both formats share one line-numbering scheme: every citable line is prefixed with a stable `NN | ` number, and all downstream prompts (classification and per-topic) read the numbered normalized text — so a reference like `(L42)` or a quoted line can be verified against `<name>.normalized.txt` in the meeting directory.
+
+## Topic file structure
+
+Every topic file follows one fixed structure — **Title, Summary, Key Insights, Contextual Highlights** — assembled by code from structured model output:
+
+- Every `(Lnn)` reference is validated against the transcript; out-of-range references are stripped.
+- Direct quotes are verified against the normalized transcript (whitespace/case-insensitive) and render as quotations; unverifiable ones render unquoted.
+- **Contextual Highlights** appears only when meeting-series context was provided for the run; the section is omitted entirely otherwise.
+- File names are slugified from the title by code, with `-2`, `-3`, … suffixes when a same-run file already holds the name.
 
 ## Quickstart
 

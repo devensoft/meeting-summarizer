@@ -21,7 +21,7 @@ export const classifyTopicsStep = createStep({
     'Identify unique topics and topic omissions with their transcript line ranges, judge cohesion, and resolve topic dominance.',
   inputSchema: transcriptSchema,
   outputSchema: topicResultSchema,
-  execute: async ({ inputData: { transcriptContent, isValidTranscript, meetingType, durationSeconds, lineCount }, mastra, getStepResult, requestContext }) => {
+  execute: async ({ inputData: { transcriptContent, isValidTranscript, meetingType, meetingContext, durationSeconds, lineCount }, mastra, getStepResult, requestContext }) => {
     if (!isValidTranscript) {
       throw new Error('Invalid transcript');
     }
@@ -58,6 +58,8 @@ export const classifyTopicsStep = createStep({
       durationSeconds,
       lineCount,
       meetingDirectoryName,
+      meetingType,
+      meetingContext,
     };
   },
 });

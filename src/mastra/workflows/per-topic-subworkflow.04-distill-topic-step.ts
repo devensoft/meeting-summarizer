@@ -1,37 +1,45 @@
-import path from 'node:path';
-import { z } from 'zod';
 import { createStep } from '@mastra/core/workflows';
-import { enrichedTopicSchema, segmentFileSchema } from './ingestion-wf.schemas';
+import { citedTopicContentSchema, enrichedTopicSchema, validatedTopicFileSchema } from './ingestion-wf.schemas';
 import { loadPrompt, renderTemplate } from '../../common/prompts';
 import { jsonOnly } from './structured-output';
+import { renderMeetingContextCard } from '../meeting-context';
+import { validateCitedTopic } from './citation-validator';
 
 const distillTopicPrompt = loadPrompt(import.meta.url, 'per-topic-subworkflow.04-distill-topic-step.prompt.md');
 
 export const distillTopicStep = createStep({
   id: 'distill-topic',
-  description: 'Distill enriched segments into the file content for this topic.',
+  description:
+    'Distill enriched segments into structured, citation-bearing topic-file content: title, summary, key insights, contextual highlights — every reference and quote validated against the normalized transcript.',
   inputSchema: enrichedTopicSchema,
-  outputSchema: segmentFileSchema,
+  outputSchema: validatedTopicFileSchema,
   execute: async ({ inputData, mastra, requestContext }) => {
     const response = await mastra.getAgent('meeting-master').generate(
       renderTemplate(distillTopicPrompt(), {
         topic: inputData.topic,
         enrichedSegments: JSON.stringify(inputData.enrichedSegments),
+        transcriptContent: inputData.transcriptContent,
+        contextBlock: renderMeetingContextCard({
+          meetingType: inputData.meetingType,
+          meetingContext: inputData.meetingContext ?? undefined,
+        }),
       }),
       {
         structuredOutput: jsonOnly(
-          z.object({ fileName: z.string(), content: z.string() }),
-          '{"fileName":"short-kebab-name","content":"full markdown document"}',
+          citedTopicContentSchema,
+          '{"title":"Topic title","summary":[{"statement":"What was discussed","lineReferences":[3,4],"quote":null}],"keyInsights":[{"statement":"The decision taken","lineReferences":[7],"quote":"exact words from line 7"}],"contextualHighlights":[]}',
         ),
         requestContext,
       },
     );
-    const fileName = response.object.fileName.replace(/[^a-zA-Z0-9_-]+/g, '-').replace(/^-|-$/g, '') || 'segment';
 
     return {
       topic: inputData.topic,
-      filePath: path.join('src', 'mastra', 'public', 'segments', `${fileName}.md`),
-      content: response.object.content,
+      ...validateCitedTopic(response.object, {
+        lineCount: inputData.lineCount,
+        transcriptContent: inputData.transcriptContent,
+      }),
+      hasMeetingContext: inputData.meetingContext !== null,
       isSegment: inputData.isSegment,
       meetingDirectoryName: inputData.meetingDirectoryName,
     };
