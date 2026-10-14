@@ -1,14 +1,14 @@
 import path from 'node:path';
 import { createStep } from '@mastra/core/workflows';
-import { segmentCreatedSchema, validatedTopicFileSchema } from './ingestion-wf.schemas';
+import { composedTopicFileSchema, segmentCreatedSchema } from './ingestion-wf.schemas';
 import { renderTopicFile } from './topic-file-renderer';
 import { resolveTopicFileName, slugifyTopicTitle } from './topic-file-name';
 
 export const writeSegmentFileStep = createStep({
   id: 'write-segment-file',
   description:
-    "Render the topic file's markdown in code and write it into the meeting's workspace directory under a slugified, collision-safe file name.",
-  inputSchema: validatedTopicFileSchema,
+    "Render the topic file's markdown in code — fixed sections through Enriched Concepts — and write it into the meeting's workspace directory under a slugified, collision-safe file name.",
+  inputSchema: composedTopicFileSchema,
   outputSchema: segmentCreatedSchema,
   execute: async ({ mastra, inputData }) => {
     const { meetingDirectoryName } = inputData;

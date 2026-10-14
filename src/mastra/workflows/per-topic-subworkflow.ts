@@ -3,7 +3,9 @@ import { consolidateTopicStep } from './per-topic-subworkflow.01-consolidate-top
 import { extractSegmentsStep } from './per-topic-subworkflow.02-extract-segments-step';
 import { enrichSegmentsStep } from './per-topic-subworkflow.03-enrich-segments-step';
 import { distillTopicStep } from './per-topic-subworkflow.04-distill-topic-step';
-import { writeSegmentFileStep } from './per-topic-subworkflow.05-write-segment-file-step';
+import { proposeEnrichedConceptsStep } from './per-topic-subworkflow.05-propose-enriched-concepts-step';
+import { composeEnrichedConceptsStep } from './per-topic-subworkflow.06-compose-enriched-concepts-step';
+import { writeSegmentFileStep } from './per-topic-subworkflow.07-write-segment-file-step';
 import { segmentCreatedSchema, topicContextSchema } from './ingestion-wf.schemas';
 
 const perTopicSubworkflow = createWorkflow({
@@ -15,6 +17,8 @@ const perTopicSubworkflow = createWorkflow({
   .then(extractSegmentsStep)
   .then(enrichSegmentsStep)
   .then(distillTopicStep)
+  .then(proposeEnrichedConceptsStep)
+  .then(composeEnrichedConceptsStep)
   .then(writeSegmentFileStep)
   .commit();
 

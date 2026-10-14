@@ -1,5 +1,9 @@
 import { createStep } from '@mastra/core/workflows';
-import { citedTopicContentSchema, enrichedTopicSchema, validatedTopicFileSchema } from './ingestion-wf.schemas';
+import {
+  citedTopicContentSchema,
+  distilledTopicSchema,
+  enrichedTopicSchema,
+} from './ingestion-wf.schemas';
 import { loadPrompt, renderTemplate } from '../../common/prompts';
 import { jsonOnly } from './structured-output';
 import { renderMeetingContextCard } from '../meeting-context';
@@ -12,7 +16,7 @@ export const distillTopicStep = createStep({
   description:
     'Distill enriched segments into structured, citation-bearing topic-file content: title, summary, key insights, contextual highlights — every reference and quote validated against the normalized transcript.',
   inputSchema: enrichedTopicSchema,
-  outputSchema: validatedTopicFileSchema,
+  outputSchema: distilledTopicSchema,
   execute: async ({ inputData, mastra, requestContext }) => {
     const response = await mastra.getAgent('meeting-master').generate(
       renderTemplate(distillTopicPrompt(), {
@@ -42,6 +46,9 @@ export const distillTopicStep = createStep({
       hasMeetingContext: inputData.meetingContext !== null,
       isSegment: inputData.isSegment,
       meetingDirectoryName: inputData.meetingDirectoryName,
+      // Threaded onward for the enriched-concept phases: the proposal call
+      // reads the citation target to spot casually-mentioned concepts.
+      transcriptContent: inputData.transcriptContent,
     };
   },
 });
