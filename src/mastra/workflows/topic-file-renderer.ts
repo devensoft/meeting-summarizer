@@ -38,14 +38,26 @@ function renderConceptsSection(concepts: readonly EnrichedConcept[]): string | n
 }
 
 /** Renders one concept: the informal mention tied to its formal foundation,
- * the blurb beneath it, the provenance label, then its reference links. */
+ * the blurb beneath it, the provenance label, then its reference links. A
+ * searched concept left with zero links after matching shows an explicit
+ * note instead of nothing after its provenance label. */
 function renderConcept(concept: EnrichedConcept): string {
   return [
     `- **${concept.informalMention}** → ${concept.formalFoundation}`,
     `  ${concept.blurb}`,
     `  ${groundingLabel(concept.grounding)}`,
-    ...concept.links.map((link) => `  - [${link.title}](${link.url})`),
+    ...conceptLinks(concept),
   ].join('\n');
+}
+
+/** The concept's link lines: one bullet per link, or the explicit
+ * `(no links returned)` note for a searched concept the matching left empty —
+ * a model-suggested concept without links stays bare, as before. */
+function conceptLinks(concept: EnrichedConcept): string[] {
+  if (concept.links.length === 0) {
+    return concept.grounding === 'web-search' ? ['  (no links returned)'] : [];
+  }
+  return concept.links.map((link) => `  - [${link.title}](${link.url})`);
 }
 
 /** The provenance label spec'd for enriched concepts: searched links say so;

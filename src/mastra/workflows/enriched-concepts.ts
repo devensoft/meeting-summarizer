@@ -57,8 +57,10 @@ export async function searchEnrichedConcepts(
  *
  * Provenance is a code decision, taken per concept from the search chain:
  * results found → `web-search`, and only links whose URL matches a searched
- * result survive (matched to the canonical result title and URL, so the
- * label stays honest); no results → `model-suggested`, where the model's own
+ * result survive — matched by normalized URL (case of scheme/host, default
+ * ports, trailing slash, and fragments are cosmetic; query strings are not)
+ * and emitted with the canonical result's title and URL, so the label stays
+ * honest; no results → `model-suggested`, where the model's own
  * links are allowed but must be well-formed http(s) URLs. Either way the
  * link list is capped at `ENRICHED_CONCEPTS_MAX_LINKS`. Concepts are output
  * in candidate (search) order; a proposal with no matching candidate, or a
@@ -123,11 +125,55 @@ function selectSearchedLinks(
   proposedLinks: readonly { title: string; url: string }[],
   results: readonly { title: string; url: string }[],
 ): EnrichedConcept['links'] {
-  const resultsByUrl = new Map(results.map((result) => [result.url, result]));
+  const resultsByUrl = new Map<string, { title: string; url: string }>();
+  for (const result of results) {
+    const key = normalizeUrlForMatch(result.url);
+    if (key !== undefined && !resultsByUrl.has(key)) {
+      resultsByUrl.set(key, result);
+    }
+  }
+
+  const matched = new Set<string>();
   return collectCappedLinks(proposedLinks, (link) => {
-    const result = resultsByUrl.get(link.url);
-    return result ? { title: result.title, url: result.url } : undefined;
+    const key = normalizeUrlForMatch(link.url);
+    if (key === undefined) {
+      return undefined;
+    }
+    const result = resultsByUrl.get(key);
+    if (result === undefined || matched.has(key)) {
+      return undefined;
+    }
+    matched.add(key);
+    // The canonical result's own title and URL render, so the label stays
+    // honest even when the proposal's spelling differed cosmetically.
+    return { title: result.title, url: result.url };
   });
+}
+
+/** Canonical form for deciding whether a proposed link is one the chain
+ * actually returned: scheme and host lowercased, fragment dropped, default
+ * ports (80/443) dropped, and a single trailing slash on the path dropped.
+ * The query string is preserved — a link must not smuggle itself in through
+ * a tracking parameter the returned URL never had. */
+function normalizeUrlForMatch(url: string): string | undefined {
+  let parsed: URL;
+  try {
+    parsed = new URL(url.trim());
+  } catch {
+    return undefined;
+  }
+
+  const scheme = parsed.protocol.replace(/:$/, '').toLowerCase();
+  if (scheme !== 'http' && scheme !== 'https') {
+    return undefined;
+  }
+
+  const host = parsed.hostname.toLowerCase();
+  const isDefaultPort = (scheme === 'http' && parsed.port === '80') || (scheme === 'https' && parsed.port === '443');
+  const port = isDefaultPort ? '' : parsed.port;
+  const pathWithSlashStripped = parsed.pathname.replace(/\/$/, '');
+
+  return `${scheme}://${host}${port === '' ? '' : `:${port}`}${pathWithSlashStripped}${parsed.search}`;
 }
 
 function selectModelLinks(proposedLinks: readonly { title: string; url: string }[]): EnrichedConcept['links'] {
