@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import { isVerifiableQuote, validateCitedTopic, validateLineReferences } from './citation-validator';
+import { isVerifiableQuote, stripInlineReferences, validateCitedPoints, validateCitedTopic, validateLineReferences } from './citation-validator';
 
 const transcript = [
   '1 | We should ship Friday.',
@@ -148,5 +148,31 @@ describe('validateCitedTopic', () => {
     );
 
     expect(result.summary[0]!.quote).toBeNull();
+  });
+});
+
+describe('validateCitedPoints', () => {
+  it('applies the same discipline as validateCitedTopic to a standalone list — the index decision log reuses it', () => {
+    const result = validateCitedPoints(
+      [
+        { statement: 'Ship Friday (L1)', lineReferences: [1], quote: 'We should ship Friday.' },
+        { statement: 'Uncited claim', lineReferences: [40], quote: null },
+      ],
+      { lineCount: 3, transcriptContent: transcript },
+    );
+
+    expect(result).toEqual([
+      { statement: 'Ship Friday', lineReferences: [1], quote: 'We should ship Friday.', quoteVerified: true },
+    ]);
+  });
+});
+
+describe('stripInlineReferences', () => {
+  it('removes inline (Lnn) tokens from plain prose and collapses the whitespace', () => {
+    expect(stripInlineReferences('Ship Friday (L1) at noon')).toBe('Ship Friday at noon');
+  });
+
+  it('trims the survivors', () => {
+    expect(stripInlineReferences('  (L2)  ')).toBe('');
   });
 });

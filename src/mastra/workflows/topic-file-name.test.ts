@@ -13,6 +13,14 @@ describe('slugifyTopicTitle', () => {
   it('falls back to "topic" when nothing alphanumeric remains', () => {
     expect(slugifyTopicTitle('???')).toBe('topic');
   });
+
+  it('falls back to the caller-provided slug when nothing alphanumeric remains — the transcript index uses "index"', () => {
+    expect(slugifyTopicTitle('???', 'index')).toBe('index');
+  });
+
+  it('keeps the caller-provided fallback only as a fallback, not for usable titles', () => {
+    expect(slugifyTopicTitle('Q3 Meeting Overview', 'index')).toBe('q3-meeting-overview');
+  });
 });
 
 describe('resolveTopicFileName', () => {

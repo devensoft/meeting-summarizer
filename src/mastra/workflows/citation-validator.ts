@@ -73,7 +73,11 @@ export function validateCitedTopic(
   };
 }
 
-function validateCitedPoints(points: CitedPoint[], citationTarget: { lineCount: number; transcriptContent: string }): ValidatedPoint[] {
+/** Validates one list of cited points — the same discipline
+ * `validateCitedTopic` applies to each topic-file section, exported for the
+ * transcript index's decision log (GLOSSARY.md: a decision record carries a
+ * supporting quote and transcript line reference, verified like any note). */
+export function validateCitedPoints(points: CitedPoint[], citationTarget: { lineCount: number; transcriptContent: string }): ValidatedPoint[] {
   const validated: ValidatedPoint[] = [];
   for (const point of points) {
     const statement = stripInlineReferences(point.statement);
@@ -94,7 +98,9 @@ function validateCitedPoints(points: CitedPoint[], citationTarget: { lineCount: 
 }
 
 /** Removes inline `(Lnn)` tokens and collapses the whitespace they leave
- * behind. */
-function stripInlineReferences(statement: string): string {
+ * behind. Exported for prose fields that carry no structured references —
+ * the index's executive summary — so no unvalidated citation token can leak
+ * into rendered markdown. */
+export function stripInlineReferences(statement: string): string {
   return statement.replace(INLINE_REFERENCE_PATTERN, '').replace(/\s+/g, ' ').trim();
 }

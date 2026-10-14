@@ -40,11 +40,19 @@ function renderSection(heading: string, points: ValidatedPoint[], hasMeetingCont
  * citation, then the quote line — a blockquote quotation when the quote was
  * verified against the transcript, bare text otherwise. */
 function renderPoint(point: ValidatedPoint): string {
+  return `- ${renderCitedPointBody(point)}`;
+}
+
+/** Renders the statement with its comma-separated `(Lnn)` citation plus the
+ * quote line — a blockquote quotation when the quote was verified against
+ * the transcript, bare text otherwise. Shared with the transcript index's
+ * decision log so both documents quote identically. */
+export function renderCitedPointBody(point: ValidatedPoint): string {
   const references = point.lineReferences.map((line) => `L${line}`).join(', ');
-  const bullet = `- ${point.statement} (${references})`;
+  const body = `${point.statement} (${references})`;
 
   if (point.quote === null) {
-    return bullet;
+    return body;
   }
-  return point.quoteVerified ? `${bullet}\n  > "${point.quote}"` : `${bullet}\n  ${point.quote}`;
+  return point.quoteVerified ? `${body}\n  > "${point.quote}"` : `${body}\n  ${point.quote}`;
 }

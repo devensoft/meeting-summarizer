@@ -28,3 +28,12 @@ export const TOPIC_DOMINANCE_THRESHOLD = 0.8;
  * short-meeting bound. Only enforced when the parsed duration is known;
  * plain-text input carries null and skips the gate. */
 export const SHORT_MEETING_MAX_SECONDS = 3600;
+
+/** Fallback title for a transcript index whose model-provided title trims to
+ * nothing — keeps the `#` heading and the slugified file name meaningful. */
+export const INDEX_TITLE_FALLBACK = 'Transcript index';
+
+/** Fallback slug for the transcript index file name when the validated index
+ * title contains nothing alphanumeric. Distinct from the topic fallback so an
+ * untitled index never masquerades as a topic file. */
+export const INDEX_FILE_FALLBACK_SLUG = 'index';
