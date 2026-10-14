@@ -10,6 +10,7 @@
  *
  * Optional overrides:
  *   WEB_SEARCH_PROVIDERS=composio:exa bun scripts/web-search-smoke.ts "query"
+ *   bun scripts/web-search-smoke.ts "query" <composioUserId>   # session user id
  *
  * Expected output: one JSON block per query with normalized {title, url,
  * snippet} results, the provider that supplied them, and any failures. With
@@ -19,13 +20,14 @@
 import { executeWebSearch } from '../src/mastra/search/web-search-tool';
 
 const query = process.argv[2]?.trim();
+const composioUserId = process.argv[3]?.trim() || undefined;
 
 if (!query) {
-  console.error('Usage: bun scripts/web-search-smoke.ts "<search query>"');
+  console.error('Usage: bun scripts/web-search-smoke.ts "<search query>" [composioUserId]');
   process.exit(2);
 }
 
-const outcome = await executeWebSearch([query]);
+const outcome = await executeWebSearch([query], { composioUserId });
 
 console.log(JSON.stringify(outcome, null, 2));
 

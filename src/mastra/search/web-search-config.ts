@@ -7,16 +7,19 @@
 
 export const COMPOSIO_API_KEY_ENV_VAR = 'COMPOSIO_API_KEY';
 export const WEB_SEARCH_PROVIDERS_ENV_VAR = 'WEB_SEARCH_PROVIDERS';
+export const COMPOSIO_USER_ID_ENV_VAR = 'COMPOSIO_USER_ID';
 
 /** Default chain: Composio Tavily first, then Composio Exa (spec decision). */
 export const DEFAULT_WEB_SEARCH_PROVIDERS = 'composio:tavily,composio:exa';
 
 /**
- * The one stable service identity every search session runs under — this
- * application has no end-user identity model, so all Composio sessions for
- * search share this single service principal.
+ * The one stable service identity every search session runs under when
+ * neither the caller nor `COMPOSIO_USER_ID` names one — a single service
+ * principal, since this application has no end-user identity model of its
+ * own. A fallback value, not a separate concept: the session user id is
+ * ordinary call data (see `readComposioUserId`).
  */
-export const WEB_SEARCH_SERVICE_IDENTITY = 'meeting-summarizer-search';
+export const DEFAULT_COMPOSIO_USER_ID = 'meeting-summarizer-search';
 
 /**
  * The fixed toolkit-tool allowlist. Exactly two tools exist for search; no
@@ -87,4 +90,17 @@ export function readWebSearchProviderChain(
 export function readComposioApiKey(env: Record<string, string | undefined>): string | undefined {
   const key = env[COMPOSIO_API_KEY_ENV_VAR]?.trim();
   return key === '' ? undefined : key;
+}
+
+/**
+ * Reads the Composio user id search sessions run under; absent or blank means
+ * no id is configured and the caller applies its fallback
+ * (`DEFAULT_COMPOSIO_USER_ID`). The session user id must be able to resolve
+ * the project's Tavily/Exa connected accounts — when those were connected
+ * from the dashboard, that is the dashboard's user id, which only an explicit
+ * `COMPOSIO_USER_ID` (or an explicit call-time id) can select.
+ */
+export function readComposioUserId(env: Record<string, string | undefined>): string | undefined {
+  const userId = env[COMPOSIO_USER_ID_ENV_VAR]?.trim();
+  return userId === '' ? undefined : userId;
 }

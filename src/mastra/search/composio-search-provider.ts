@@ -3,7 +3,6 @@ import { extractSearchResults } from './result-normalizer';
 import { RateLimitedSearchError, type SearchProvider, type SearchQuery, type SearchResult } from './search-provider';
 import {
   readComposioApiKey,
-  WEB_SEARCH_SERVICE_IDENTITY,
   WEB_SEARCH_TOOL_ALLOWLIST,
   type WebSearchToolkit,
 } from './web-search-config';
@@ -11,7 +10,9 @@ import {
 /**
  * The one concrete `SearchProvider` implementation: it calls the Composio
  * Platform SDK in-process (no MCP client) using the project API key from the
- * environment and one stable service identity.
+ * environment and a session user id supplied by the caller — whose connected
+ * accounts resolve for tool execution (shared id today; per-user ids via
+ * ConnectLink later).
  *
  * This module is the network boundary — unit tests never execute it; they
  * inject mock providers at the `SearchProvider` seam instead.
@@ -59,24 +60,29 @@ function buildToolArguments(
 }
 
 /**
- * One shared session for the whole process: the fixed allowlist covers both
- * search tools, exposed with the direct-tools preset (no model-facing meta
- * tools) and no sandbox. A failed creation is not cached — the next call
- * retries, so a transient Composio outage does not poison the process.
+ * One shared session per user id for the whole process: the fixed allowlist
+ * covers both search tools, exposed with the direct-tools preset (no
+ * model-facing meta tools) and no sandbox. Sessions are cached under the
+ * resolved session user id, so distinct ids (a shared id today, per-user
+ * ConnectLink ids later) get their own session without cross-talk. A failed
+ * creation is not cached — the next call retries, so a transient Composio
+ * outage does not poison the process.
  */
-let sessionPromise: Promise<ComposioToolExecutor> | undefined;
+const sessionPromises = new Map<string, Promise<ComposioToolExecutor>>();
 
-function getComposioSession(apiKey: string): Promise<ComposioToolExecutor> {
-  sessionPromise ??= createComposioSession(apiKey).catch((error: unknown) => {
-    sessionPromise = undefined;
+function getComposioSession(apiKey: string, userId: string): Promise<ComposioToolExecutor> {
+  let sessionPromise = sessionPromises.get(userId);
+  sessionPromise ??= createComposioSession(apiKey, userId).catch((error: unknown) => {
+    sessionPromises.delete(userId);
     throw error;
   });
+  sessionPromises.set(userId, sessionPromise);
   return sessionPromise;
 }
 
-async function createComposioSession(apiKey: string): Promise<ComposioToolExecutor> {
+async function createComposioSession(apiKey: string, userId: string): Promise<ComposioToolExecutor> {
   const composio = new Composio({ apiKey });
-  const session = await composio.sessions.create(WEB_SEARCH_SERVICE_IDENTITY, {
+  const session = await composio.sessions.create(userId, {
     toolkits: Object.keys(WEB_SEARCH_TOOL_ALLOWLIST),
     tools: {
       tavily: { enable: [WEB_SEARCH_TOOL_ALLOWLIST.tavily] },
@@ -91,6 +97,14 @@ async function createComposioSession(apiKey: string): Promise<ComposioToolExecut
 export interface ComposioSearchProviderOptions {
   /** Overrides the COMPOSIO_API_KEY environment variable (used by setups that pass the key programmatically). */
   apiKey?: string;
+  /**
+   * The Composio user id the search session runs under — the id whose
+   * connected accounts resolve at execution time (a shared id today, per-user
+   * ConnectLink ids later). Required: callers resolve it (explicit input,
+   * environment, or `DEFAULT_COMPOSIO_USER_ID`), so this network boundary
+   * never guesses.
+   */
+  userId: string;
 }
 
 /**
@@ -103,7 +117,7 @@ export interface ComposioSearchProviderOptions {
  */
 export function createComposioSearchProvider(
   toolkit: WebSearchToolkit,
-  options: ComposioSearchProviderOptions = {},
+  options: ComposioSearchProviderOptions,
 ): SearchProvider {
   const tool = WEB_SEARCH_TOOL_ALLOWLIST[toolkit];
 
@@ -118,7 +132,7 @@ export function createComposioSearchProvider(
   };
 
   const runTool = async (args: Record<string, unknown>) => {
-    const session = await getComposioSession(resolveApiKey());
+    const session = await getComposioSession(resolveApiKey(), options.userId);
     try {
       const response = await session.execute(tool, args);
       if (response.resultType === 'failed') {

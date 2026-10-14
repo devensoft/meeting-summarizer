@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'bun:test';
 import {
+  DEFAULT_COMPOSIO_USER_ID,
   DEFAULT_WEB_SEARCH_PROVIDERS,
   WEB_SEARCH_TOOL_ALLOWLIST,
   parseWebSearchProviderChain,
   readComposioApiKey,
+  readComposioUserId,
   readWebSearchProviderChain,
 } from './web-search-config';
 
@@ -57,6 +59,10 @@ describe('parseWebSearchProviderChain', () => {
   it('pins the fixed tool allowlist to exactly TAVILY_SEARCH and EXA_SEARCH', () => {
     expect(WEB_SEARCH_TOOL_ALLOWLIST).toEqual({ tavily: 'TAVILY_SEARCH', exa: 'EXA_SEARCH' });
   });
+
+  it('pins the default session user id (deployment-visible in Composio)', () => {
+    expect(DEFAULT_COMPOSIO_USER_ID).toBe('meeting-summarizer-search');
+  });
 });
 
 describe('readWebSearchProviderChain', () => {
@@ -79,5 +85,16 @@ describe('readComposioApiKey', () => {
   it('returns undefined when no key is configured', () => {
     expect(readComposioApiKey({})).toBeUndefined();
     expect(readComposioApiKey({ COMPOSIO_API_KEY: '   ' })).toBeUndefined();
+  });
+});
+
+describe('readComposioUserId', () => {
+  it('reads and trims the session user id from the environment', () => {
+    expect(readComposioUserId({ COMPOSIO_USER_ID: '  pg-test-abc  ' })).toBe('pg-test-abc');
+  });
+
+  it('returns undefined when no user id is configured', () => {
+    expect(readComposioUserId({})).toBeUndefined();
+    expect(readComposioUserId({ COMPOSIO_USER_ID: '   ' })).toBeUndefined();
   });
 });
