@@ -4,7 +4,7 @@ import { createStep } from '@mastra/core/workflows';
 import { branchRunSchema, runOutputEntrySchema, topicIndexContentSchema, type RunOutputEntry } from './ingestion-wf.schemas';
 import { loadPrompt, renderTemplate } from '../prompts';
 import { resolveProjectRoot, resolveWithinDirectory } from '../paths';
-import { jsonOnly } from './structured-output';
+import { glmStructuredOutput } from '../models/glm';
 import { INDEX_FILE_FALLBACK_SLUG } from './constants';
 import { meetingModeGuidance } from './meeting-mode';
 import { renderTopicIndex } from './transcript-index-renderer';
@@ -55,7 +55,7 @@ export const writeIndexStep = createStep({
         transcriptContent,
       }),
       {
-        structuredOutput: jsonOnly(
+        structuredOutput: glmStructuredOutput(
           topicIndexContentSchema,
           '{"title":"Q3 product sync: decisions and follow-ups","executiveSummary":"One paragraph a participant who missed the meeting can catch up from.","recurringThemes":[{"theme":"Rollout timing","topicFileNames":["launch-plan","budget-review"]}],"decisions":[{"statement":"Ship Friday","lineReferences":[1],"quote":null}],"actionItems":[{"assigner":"Dana","assignee":"Ari","dueDate":"2026-03-01","deliverable":"Draft rollout plan"}],"unresolvedItems":[{"statement":"Does the budget cover hiring?","lineReferences":[2]}]}',
         ),
