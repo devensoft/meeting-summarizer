@@ -9,6 +9,7 @@ import { glmStructuredOutput } from '../models/glm';
 import { renderMeetingContextCard } from '../meeting-context';
 import { meetingModeGuidance } from './meeting-mode';
 import { validateCitedTopic } from './citation-validator';
+import { slugifyTopicTitle } from './topic-file-name';
 
 const distillTopicPrompt = loadPrompt(import.meta.url, 'per-topic-subworkflow.04-distill-topic-step.prompt.md');
 
@@ -44,6 +45,7 @@ export const distillTopicStep = createStep({
         lineCount: inputData.lineCount,
         transcriptContent: inputData.transcriptContent,
       }),
+      fileName: slugifyTopicTitle(response.object.title),
       hasMeetingContext: inputData.meetingContext !== null,
       isSegment: inputData.isSegment,
       meetingDirectoryName: inputData.meetingDirectoryName,

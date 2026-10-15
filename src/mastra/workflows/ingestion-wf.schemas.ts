@@ -167,6 +167,7 @@ export const enrichedTopicSchema = extractedTopicSchema.extend({
 });
 
 export const distilledTopicSchema = validatedTopicFileSchema.extend({
+  fileName: z.string(),
   transcriptContent: z
     .string()
     .describe('The normalized transcript again — the citation target the concept phases read.'),
@@ -338,4 +339,3 @@ export const validatedTopicIndexSchema = z.object({
   unresolvedItems: z.array(validatedUnresolvedItemSchema),
 });
 export type ValidatedTopicIndex = z.infer<typeof validatedTopicIndexSchema>;
-
