@@ -11,12 +11,15 @@
 /** One WebVTT cue, normalized: inline tags stripped, multi-line cue text
  * joined onto one line, speaker taken from a voice tag or a leading name
  * marker when present. Timestamps are milliseconds from the start of the
- * meeting. */
+ * meeting. The optional cue identifier (the free-form line some exporters
+ * place above the timing line — often a GUID) is kept verbatim so the
+ * MeetingID can be read from it. */
 export interface VttCue {
   startMs: number;
   endMs: number;
   speaker: string | null;
   text: string;
+  identifier: string | null;
 }
 
 /** Parses raw WebVTT content into cues. Blocks without a timing line and
@@ -90,12 +93,14 @@ function parseCueBlock(blockLines: string[]): VttCue | null {
   // Lines before the timing line are cue identifiers; lines after it are the
   // cue text. Voice tags, inline markup, and name markers are resolved here so
   // every cue leaves the parser as one plain line with an optional speaker.
+  const identifierLines = blockLines.slice(0, timingIndex).map(line => line.trim()).filter(line => line !== '');
+  const identifier = identifierLines.length > 0 ? identifierLines.join(' ') : null;
   const { speaker, text } = renderCueText(blockLines.slice(timingIndex + 1));
   if (text === '') {
     return null;
   }
 
-  return { startMs, endMs, speaker, text };
+  return { startMs, endMs, speaker, text, identifier };
 }
 
 const VOICE_TAG_PATTERN = /<v(?:\.[^>\s]*)?\s+([^>]+?)\s*>/;

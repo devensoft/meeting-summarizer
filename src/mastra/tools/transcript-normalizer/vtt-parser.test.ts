@@ -5,7 +5,7 @@ describe('parseVtt', () => {
   it('parses a minimal cue after the WEBVTT header', () => {
     const vtt = ['WEBVTT', '', '00:00:01.000 --> 00:00:04.000', 'Hello world', ''].join('\n');
 
-    expect(parseVtt(vtt)).toEqual([{ startMs: 1000, endMs: 4000, speaker: null, text: 'Hello world' }]);
+    expect(parseVtt(vtt)).toEqual([{ startMs: 1000, endMs: 4000, speaker: null, text: 'Hello world', identifier: null }]);
   });
 
   it('takes the speaker from a voice tag and strips inline tags', () => {
@@ -18,7 +18,7 @@ describe('parseVtt', () => {
     ].join('\n');
 
     expect(parseVtt(vtt)).toEqual([
-      { startMs: 1000, endMs: 4000, speaker: 'Diego', text: 'Hello world, this is important' },
+      { startMs: 1000, endMs: 4000, speaker: 'Diego', text: 'Hello world, this is important', identifier: null },
     ]);
   });
 
@@ -28,7 +28,7 @@ describe('parseVtt', () => {
     );
 
     expect(parseVtt(vtt)).toEqual([
-      { startMs: 10000, endMs: 12000, speaker: 'Diego', text: 'I will take that action item.' },
+      { startMs: 10000, endMs: 12000, speaker: 'Diego', text: 'I will take that action item.', identifier: null },
     ]);
   });
 
@@ -36,7 +36,7 @@ describe('parseVtt', () => {
     const vtt = ['WEBVTT', '', '00:01:00.000 --> 00:01:02.000', '00:30 is the deadline.', ''].join('\n');
 
     expect(parseVtt(vtt)).toEqual([
-      { startMs: 60000, endMs: 62000, speaker: null, text: '00:30 is the deadline.' },
+      { startMs: 60000, endMs: 62000, speaker: null, text: '00:30 is the deadline.', identifier: null },
     ]);
   });
 
@@ -57,10 +57,12 @@ describe('parseVtt', () => {
       '',
     ].join('\n');
 
-    expect(parseVtt(vtt)).toEqual([{ startMs: 1000, endMs: 2000, speaker: null, text: 'Only real cues remain.' }]);
+    expect(parseVtt(vtt)).toEqual([
+      { startMs: 1000, endMs: 2000, speaker: null, text: 'Only real cues remain.', identifier: null },
+    ]);
   });
 
-  it('ignores cue identifiers and joins multi-line cue text onto one line', () => {
+  it('keeps the cue identifier and joins multi-line cue text onto one line', () => {
     const vtt = [
       'WEBVTT',
       '',
@@ -72,7 +74,34 @@ describe('parseVtt', () => {
     ].join('\n');
 
     expect(parseVtt(vtt)).toEqual([
-      { startMs: 1000, endMs: 4000, speaker: null, text: 'First line of the cue second line of the same cue' },
+      {
+        startMs: 1000,
+        endMs: 4000,
+        speaker: null,
+        text: 'First line of the cue second line of the same cue',
+        identifier: 'intro-cue-1',
+      },
+    ]);
+  });
+
+  it('keeps a GUID-shaped cue identifier as some exporters stamp it', () => {
+    const vtt = [
+      'WEBVTT',
+      '',
+      '6a2f0c1e-93d4-4b7a-9f21-8c5d3e7a1b40',
+      '00:00:01.000 --> 00:00:04.000',
+      '<v Diego>Identified cue',
+      '',
+    ].join('\n');
+
+    expect(parseVtt(vtt)).toEqual([
+      {
+        startMs: 1000,
+        endMs: 4000,
+        speaker: 'Diego',
+        text: 'Identified cue',
+        identifier: '6a2f0c1e-93d4-4b7a-9f21-8c5d3e7a1b40',
+      },
     ]);
   });
 
@@ -95,9 +124,9 @@ describe('parseVtt', () => {
     ].join('\n');
 
     expect(parseVtt(vtt)).toEqual([
-      { startMs: 1000, endMs: 2000, speaker: 'Diego', text: 'Rolling caption text' },
-      { startMs: 3000, endMs: 4000, speaker: 'Ana', text: 'Interrupting with a different line' },
-      { startMs: 4000, endMs: 5000, speaker: 'Diego', text: 'Rolling caption text' },
+      { startMs: 1000, endMs: 2000, speaker: 'Diego', text: 'Rolling caption text', identifier: null },
+      { startMs: 3000, endMs: 4000, speaker: 'Ana', text: 'Interrupting with a different line', identifier: null },
+      { startMs: 4000, endMs: 5000, speaker: 'Diego', text: 'Rolling caption text', identifier: null },
     ]);
   });
 
@@ -115,13 +144,17 @@ describe('parseVtt', () => {
       '',
     ].join('\n');
 
-    expect(parseVtt(vtt)).toEqual([{ startMs: 2000, endMs: 3000, speaker: null, text: 'Real content survives.' }]);
+    expect(parseVtt(vtt)).toEqual([
+      { startMs: 2000, endMs: 3000, speaker: null, text: 'Real content survives.', identifier: null },
+    ]);
   });
 
   it('accepts minute-based timestamps without an hour component', () => {
     const vtt = ['WEBVTT', '', '02:03.500 --> 02:05.000', 'Short form timestamps.', ''].join('\n');
 
-    expect(parseVtt(vtt)).toEqual([{ startMs: 123500, endMs: 125000, speaker: null, text: 'Short form timestamps.' }]);
+    expect(parseVtt(vtt)).toEqual([
+      { startMs: 123500, endMs: 125000, speaker: null, text: 'Short form timestamps.', identifier: null },
+    ]);
   });
 
   it('returns no cues for an empty or header-only file', () => {

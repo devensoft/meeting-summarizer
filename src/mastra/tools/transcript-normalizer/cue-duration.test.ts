@@ -3,7 +3,7 @@ import { durationFromCues } from './cue-duration';
 import type { VttCue } from './vtt-parser';
 
 function cue(startMs: number, endMs: number): VttCue {
-  return { startMs, endMs, speaker: null, text: 'cue text' };
+  return { startMs, endMs, speaker: null, text: 'cue text', identifier: null };
 }
 
 describe('durationFromCues', () => {

@@ -6,7 +6,7 @@ export const inputFileSchema = z.object({
     .string()
     .min(1)
     .describe(
-      'Path to a WebVTT (.vtt) or plain-text transcript on the Mastra server. Relative paths resolve against the project root (or the directory named by PROJECT_ROOT, when set); absolute paths are used as-is.',
+      'Path to a WebVTT (.vtt), plain-text (.txt), or Word (.doc, .docx) transcript on the Mastra server. Relative paths resolve against the project root (or the directory named by PROJECT_ROOT, when set); absolute paths are used as-is.',
     ),
   seriesName: z
     .string()
@@ -21,13 +21,33 @@ export const transcriptSchema = z.object({
   transcriptContent: z
     .string()
     .describe(
-      'The normalized transcript: line-numbered plain text with stable "NN | " prefixes. It is the citation target every downstream prompt reads.',
+      'The normalized transcript: numbered lines with stable "NN | " prefixes, VTT cues carrying their relative "[HH:MM:SS]" timestamp. It is the citation target every downstream prompt reads.',
     ),
   durationSeconds: z
     .number()
     .nullable()
-    .describe('Meeting duration in seconds, parsed from VTT cue timestamps; null for plain-text input.'),
+    .describe('Meeting duration in seconds, parsed from VTT cue timestamps; null for every other input format.'),
   lineCount: z.number().int().nonnegative().describe('Number of numbered lines in the normalized transcript.'),
+  meetingId: z
+    .string()
+    .nullable()
+    .describe(
+      'The meeting GUID the VTT input stamps on its cues; null when the input carries none (plain text, Word documents, mixed identifiers).',
+    ),
+  transcriptId: z.string().describe('Fresh random GUID generated for this ingest of the transcript.'),
+  title: z.string().describe('Frontmatter title of the normalized transcript: the source file name without extension.'),
+  startTimestamp: z
+    .string()
+    .nullable()
+    .describe('ISO 8601 meeting start, defaulted to the source file creation time; null when no usable file timestamp exists.'),
+  endTimestamp: z.string().nullable().describe('ISO 8601 meeting end: start plus the parsed duration; null when either is unknown.'),
+  participantCount: z
+    .number()
+    .int()
+    .nonnegative()
+    .nullable()
+    .describe('Distinct speakers derivable from VTT cues; null for plain-text and Word inputs.'),
+  normalizedFilePath: z.string().describe('Absolute path of the written normalized markdown transcript.'),
   meetingContext: z
     .string()
     .nullable()
