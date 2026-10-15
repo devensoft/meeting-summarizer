@@ -4,7 +4,7 @@ import {
   proposedConceptsSchema,
   distilledTopicSchema,
 } from './ingestion-wf.schemas';
-import { loadPrompt, renderTemplate } from '../../common/prompts';
+import { loadPrompt, renderTemplate } from '../prompts';
 import { jsonOnly } from './structured-output';
 import { searchEnrichedConcepts, selectConceptCandidates } from './enriched-concepts';
 import { executeWebSearch } from '../tools/web-search/web-search-tool';

@@ -1,5 +1,5 @@
 import { agentInstructions } from '@mastra/core/agent';
-import { loadPrompt } from '../../../common/prompts';
+import { loadPrompt } from '../../prompts';
 import { readMeetingContext, renderMeetingContextCard } from '../../meeting-context';
 
 // The static persona lives in instructions.base.md — renamed from the

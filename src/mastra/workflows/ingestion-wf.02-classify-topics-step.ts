@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { createStep } from '@mastra/core/workflows';
 import { classifiedTopicSchema, topicResultSchema, transcriptSchema } from './ingestion-wf.schemas';
 import { readTranscriptStep } from './ingestion-wf.01-read-transcript-step';
-import { loadPrompt, renderTemplate } from '../../common/prompts';
+import { loadPrompt, renderTemplate } from '../prompts';
 import { jsonOnly } from './structured-output';
 import { readMeetingContext, reconcileTopics, renderMeetingContextCard } from '../meeting-context';
 import { resolveTopicDominance } from './topic-dominance';

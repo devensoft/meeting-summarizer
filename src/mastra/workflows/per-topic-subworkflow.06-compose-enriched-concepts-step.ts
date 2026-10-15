@@ -4,7 +4,7 @@ import {
   composedTopicFileSchema,
   proposedConceptsSchema,
 } from './ingestion-wf.schemas';
-import { loadPrompt, renderTemplate } from '../../common/prompts';
+import { loadPrompt, renderTemplate } from '../prompts';
 import { jsonOnly } from './structured-output';
 import { resolveEnrichedConcepts } from './enriched-concepts';
 
