@@ -20,4 +20,6 @@ Enriched segments:
 
 Numbered transcript (the citation target — cite its `NN |` line numbers):
 {{transcriptContent}}
+
+Notes emphasis for this kind of meeting: {{modeGuidance}}
 {{contextBlock}}

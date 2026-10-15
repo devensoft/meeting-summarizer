@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { meetingFormatSchema, meetingModeSchema, meetingModeScoresSchema } from './meeting-mode';
 
 export const inputFileSchema = z.object({
   filePath: z
@@ -27,7 +28,6 @@ export const transcriptSchema = z.object({
     .nullable()
     .describe('Meeting duration in seconds, parsed from VTT cue timestamps; null for plain-text input.'),
   lineCount: z.number().int().nonnegative().describe('Number of numbered lines in the normalized transcript.'),
-  meetingType: z.string(),
   meetingContext: z
     .string()
     .nullable()
@@ -58,7 +58,15 @@ export const topicResultSchema = z.object({
   durationSeconds: z.number().nullable(),
   lineCount: z.number().int().nonnegative(),
   meetingDirectoryName: z.string(),
-  meetingType: z.string(),
+  format: meetingFormatSchema.describe(
+    'The meeting format (GLOSSARY.md): the ritual this meeting follows, judged from the transcript; "other" when none fits.',
+  ),
+  modeScores: meetingModeScoresSchema.describe(
+    'The three meeting-mode scores (GLOSSARY.md: meeting mode); code resolves them to the primary mode.',
+  ),
+  mode: meetingModeSchema.describe(
+    'The primary meeting mode: the highest-scoring mode, resolved in code with a fixed tie-break. Drives prompt emphasis only.',
+  ),
   meetingContext: z.string().nullable(),
 });
 export const topicContextSchema = z.object({
@@ -68,7 +76,8 @@ export const topicContextSchema = z.object({
   durationSeconds: z.number().nullable(),
   lineCount: z.number().int().nonnegative(),
   meetingDirectoryName: z.string(),
-  meetingType: z.string(),
+  format: meetingFormatSchema,
+  mode: meetingModeSchema,
   meetingContext: z
     .string()
     .nullable()
@@ -226,7 +235,8 @@ export const branchRunSchema = z.object({
   singleTopic: z.string().nullable(),
   meetingDirectoryName: z.string(),
   lineCount: z.number().int().nonnegative(),
-  meetingType: z.string(),
+  format: meetingFormatSchema,
+  mode: meetingModeSchema,
 });
 export type BranchRun = z.infer<typeof branchRunSchema>;
 

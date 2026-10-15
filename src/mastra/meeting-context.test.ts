@@ -5,50 +5,43 @@ import { readMeetingContext, reconcileTopics, renderMeetingContextCard } from '.
 
 describe('readMeetingContext', () => {
   it('returns no context when there is no RequestContext', () => {
-    expect(readMeetingContext(undefined)).toEqual({ meetingType: undefined, meetingContext: undefined });
+    expect(readMeetingContext(undefined)).toEqual({ meetingContext: undefined });
   });
 
-  it('reads string values from the context', () => {
+  it('reads the string value from the context', () => {
     const requestContext = new RequestContext();
-    requestContext.setRaw('meetingType', 'design sync');
     requestContext.setRaw('meetingContext', 'Ongoing greenfield planning series.');
 
     expect(readMeetingContext(requestContext)).toEqual({
-      meetingType: 'design sync',
       meetingContext: 'Ongoing greenfield planning series.',
     });
   });
 
-  it('ignores blank and non-string values', () => {
+  it('ignores blank values and stale preset keys such as meetingType', () => {
     const requestContext = new RequestContext();
-    requestContext.setRaw('meetingType', '   ');
-    requestContext.setRaw('meetingContext', 42);
+    requestContext.setRaw('meetingContext', '   ');
+    requestContext.setRaw('meetingType', 42);
 
-    expect(readMeetingContext(requestContext)).toEqual({ meetingType: undefined, meetingContext: undefined });
+    expect(readMeetingContext(requestContext)).toEqual({ meetingContext: undefined });
   });
 });
 
 describe('renderMeetingContextCard', () => {
   it('renders nothing without meeting context', () => {
     expect(renderMeetingContextCard({})).toBe('');
-    expect(renderMeetingContextCard({ meetingType: 'design sync' })).toBe('');
+    expect(renderMeetingContextCard({ meetingContext: '   ' })).toBe('');
   });
 
-  it('renders the card with the series type when both keys exist', () => {
-    const card = renderMeetingContextCard({
-      meetingType: 'design sync',
-      meetingContext: 'Ongoing greenfield planning series.',
-    });
-
-    expect(card).toContain('Meeting context');
-    expect(card).toContain('"design sync"');
-    expect(card).toContain('Ongoing greenfield planning series.');
-  });
-
-  it('renders the card without a series line when only the context exists', () => {
+  it('renders the card with the series background', () => {
     const card = renderMeetingContextCard({ meetingContext: 'Ongoing greenfield planning series.' });
 
+    expect(card).toContain('Meeting context');
     expect(card).toContain('Ongoing greenfield planning series.');
+  });
+
+  it('never renders a series-type line — meetingType is gone', () => {
+    const card = renderMeetingContextCard({ meetingContext: 'Ongoing greenfield planning series.' });
+
     expect(card).not.toContain('belongs to');
   });
 });

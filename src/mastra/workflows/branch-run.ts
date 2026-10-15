@@ -24,7 +24,8 @@ function toTopicRunContext(input: TopicResult, topic: string, isSegment: boolean
     durationSeconds: input.durationSeconds,
     lineCount: input.lineCount,
     meetingDirectoryName: input.meetingDirectoryName,
-    meetingType: input.meetingType,
+    format: input.format,
+    mode: input.mode,
     meetingContext: input.meetingContext,
     omittedTopics: input.omittedTopics,
     singleTopic: input.singleTopic,
@@ -42,7 +43,8 @@ function toBranchRun(context: TopicRunContext, files: SegmentCreated[]): BranchR
     singleTopic: context.singleTopic ?? null,
     meetingDirectoryName: context.meetingDirectoryName,
     lineCount: context.lineCount,
-    meetingType: context.meetingType,
+    format: context.format,
+    mode: context.mode,
   };
 }
 

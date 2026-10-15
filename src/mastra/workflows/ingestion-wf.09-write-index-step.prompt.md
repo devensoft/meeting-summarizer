@@ -1,4 +1,4 @@
-The attached material describes a {{meetingType}} meeting whose notes were already written as one file per topic. Write the meeting's transcript index — the overview document a participant who missed the meeting reads first.
+The attached material describes a {{format}} meeting whose notes were already written as one file per topic. Write the meeting's transcript index — the overview document a participant who missed the meeting reads first.
 
 Topic files (a JSON array; fileName is the file's name without extension, content is its full markdown):
 {{topicFiles}}
@@ -10,6 +10,8 @@ Transcript, rendered as numbered lines — every line starts with a stable `NN |
 {{transcriptContent}}
 
 The omitted topics are listed only so your summary and themes account for everything the meeting contained; they are rendered from that data, so do not return them. The wikilinked topic index is also built by code from the run's actual files, so return no field for it.
+
+Notes emphasis for this kind of meeting: {{modeGuidance}}
 
 Fill every field of the JSON response:
 

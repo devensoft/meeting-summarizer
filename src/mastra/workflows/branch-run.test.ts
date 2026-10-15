@@ -15,7 +15,9 @@ const topicResult: TopicResult = {
   durationSeconds: 600,
   lineCount: 3,
   meetingDirectoryName: 'sync-1760000000000',
-  meetingType: 'design sync',
+  format: 'planning',
+  modeScores: { status: 0.6, discussion: 0.3, learning: 0.1 },
+  mode: 'status',
   meetingContext: null,
 };
 
@@ -35,7 +37,8 @@ describe('toSingleTopicContext', () => {
     expect(context.transcriptContent).toBe(topicResult.transcriptContent);
     expect(context.meetingDirectoryName).toBe('sync-1760000000000');
     expect(context.lineCount).toBe(3);
-    expect(context.meetingType).toBe('design sync');
+    expect(context.format).toBe('planning');
+    expect(context.mode).toBe('status');
     expect(context.omittedTopics).toEqual(topicResult.omittedTopics);
     expect(context.singleTopic).toBe('Launch plan');
   });
@@ -52,7 +55,8 @@ describe('toMultipleTopicContexts', () => {
     expect(contexts[1]!.transcriptContent).toBe(topicResult.transcriptContent);
     expect(contexts[1]!.meetingDirectoryName).toBe('sync-1760000000000');
     expect(contexts[1]!.lineCount).toBe(3);
-    expect(contexts[1]!.meetingType).toBe('design sync');
+    expect(contexts[1]!.format).toBe('planning');
+    expect(contexts[1]!.mode).toBe('status');
   });
 });
 
@@ -71,7 +75,8 @@ describe('singleTopicBranchRun', () => {
     expect(run.singleTopic).toBe('Launch plan');
     expect(run.meetingDirectoryName).toBe('sync-1760000000000');
     expect(run.lineCount).toBe(3);
-    expect(run.meetingType).toBe('design sync');
+    expect(run.format).toBe('planning');
+    expect(run.mode).toBe('status');
   });
 });
 
@@ -89,6 +94,7 @@ describe('multipleTopicsBranchRun', () => {
     expect(run.transcriptContent).toBe(topicResult.transcriptContent);
     expect(run.meetingDirectoryName).toBe('sync-1760000000000');
     expect(run.lineCount).toBe(3);
-    expect(run.meetingType).toBe('design sync');
+    expect(run.format).toBe('planning');
+    expect(run.mode).toBe('status');
   });
 });

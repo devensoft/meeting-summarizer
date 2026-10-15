@@ -3,15 +3,16 @@ import type { ClassifiedTopic } from './workflows/ingestion-wf.schemas';
 import { dedupeByTrimmedLowerCaseKey } from '../common/utils';
 
 /**
- * Optional per-run framing for one meeting series, carried in the run's
+ * Optional per-run background for one meeting series, carried in the run's
  * RequestContext. It is seeded from a Studio request-context preset (see
  * `presets.example.json`; `bun run dev` loads it via the
  * `--request-context-presets` flag). Every key is optional: an absent or
  * empty context leaves the workflow behaving exactly as it would without one.
+ * What kind of meeting this is — format and mode (GLOSSARY.md) — is not
+ * user input: the classifier infers both from the transcript (see
+ * `workflows/meeting-mode.ts`).
  */
 export type MeetingContext = {
-  /** What kind of meeting this series holds, e.g. "greenfield product design and planning sync". */
-  meetingType: string;
   /** Free-form background on the series: purpose, standing agenda, known low-signal tangents. */
   meetingContext: string;
 };
@@ -20,16 +21,12 @@ export type MeetingContext = {
 type AnyRequestContext = RequestContext<any> | undefined;
 
 /**
- * Reads the meeting-context keys from a run's RequestContext. Tolerates an
+ * Reads the meeting-context key from a run's RequestContext. Tolerates an
  * absent context and absent or blank values; only non-empty strings survive.
  */
 export function readMeetingContext(requestContext: AnyRequestContext): Partial<MeetingContext> {
-  const readString = (key: keyof MeetingContext): string | undefined => {
-    const value: unknown = requestContext?.get(key);
-    return typeof value === 'string' && value.trim().length > 0 ? value : undefined;
-  };
-
-  return { meetingType: readString('meetingType'), meetingContext: readString('meetingContext') };
+  const value: unknown = requestContext?.get('meetingContext');
+  return { meetingContext: typeof value === 'string' && value.trim().length > 0 ? value : undefined };
 }
 
 /**
@@ -38,17 +35,12 @@ export function readMeetingContext(requestContext: AnyRequestContext): Partial<M
  * unchanged for runs without a preset.
  */
 export function renderMeetingContextCard(context: Partial<MeetingContext>): string {
-  if (!context.meetingContext) {
+  const background = context.meetingContext;
+  if (!background || background.trim().length === 0) {
     return '';
   }
 
-  const lines = [
-    'Meeting context (background on this meeting series — use it to judge what this meeting is and is not about):',
-    context.meetingType ? `This meeting belongs to the "${context.meetingType}" series.` : undefined,
-    context.meetingContext,
-  ].filter((line): line is string => line !== undefined);
-
-  return `${lines.join('\n')}\n`;
+  return `Meeting context (background on this meeting series — use it to judge what this meeting is and is not about):\n${background}\n`;
 }
 
 /**

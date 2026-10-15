@@ -68,7 +68,6 @@ export const readTranscriptStep = createStep({
       transcriptContent: normalized.content,
       durationSeconds: normalized.durationSeconds,
       lineCount: normalized.lineCount,
-      meetingType: meetingContext.meetingType ?? 'general',
       meetingContext: meetingContext.meetingContext ?? null,
     };
   },

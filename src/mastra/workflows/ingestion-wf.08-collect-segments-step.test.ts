@@ -12,7 +12,8 @@ const multiTopicRun: BranchRun = {
   singleTopic: null,
   meetingDirectoryName: 'sync',
   lineCount: 3,
-  meetingType: 'design sync',
+  format: 'planning',
+  mode: 'status',
 };
 
 const singleTopicRun: BranchRun = {
@@ -24,7 +25,8 @@ const singleTopicRun: BranchRun = {
   singleTopic: 'Launch plan',
   meetingDirectoryName: 'sync',
   lineCount: 1,
-  meetingType: 'design sync',
+  format: 'standup',
+  mode: 'status',
 };
 
 describe('flattenBranchRun', () => {

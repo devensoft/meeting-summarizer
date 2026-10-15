@@ -7,6 +7,7 @@ import {
 import { loadPrompt, renderTemplate } from '../../common/prompts';
 import { jsonOnly } from './structured-output';
 import { renderMeetingContextCard } from '../meeting-context';
+import { meetingModeGuidance } from './meeting-mode';
 import { validateCitedTopic } from './citation-validator';
 
 const distillTopicPrompt = loadPrompt(import.meta.url, 'per-topic-subworkflow.04-distill-topic-step.prompt.md');
@@ -23,8 +24,8 @@ export const distillTopicStep = createStep({
         topic: inputData.topic,
         enrichedSegments: JSON.stringify(inputData.enrichedSegments),
         transcriptContent: inputData.transcriptContent,
+        modeGuidance: meetingModeGuidance(inputData.mode),
         contextBlock: renderMeetingContextCard({
-          meetingType: inputData.meetingType,
           meetingContext: inputData.meetingContext ?? undefined,
         }),
       }),

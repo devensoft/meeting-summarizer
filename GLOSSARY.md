@@ -51,3 +51,11 @@ _Avoid_: learned concept, external link
 **Meeting series**:
 An ongoing set of related meetings sharing one purpose; named when a transcript is ingested so its shared context can apply.
 _Avoid_: theme
+
+**Meeting format**:
+The ritual a meeting follows — standup, planning, retrospective, one-on-one, brainstorm, workshop, or other — judged from the normalized transcript by the classifier. Format describes the meeting; it never drives behavior.
+_Avoid_: meeting type, meeting style
+
+**Meeting mode**:
+What a meeting's notes need most. The classifier scores three modes — status (decisions and task assignments), discussion (open-ended exploration), and learning (teaching) — and code resolves one primary mode with a fixed tie-break. The mode drives prompt emphasis only: what the notes hunt for first. Sections, schemas, and citation validation never change with it.
+_Avoid_: meeting type, note style

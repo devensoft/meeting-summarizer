@@ -6,6 +6,7 @@ import { loadPrompt, renderTemplate } from '../../common/prompts';
 import { resolveProjectRoot, resolveWithinDirectory } from '../../common/utils';
 import { jsonOnly } from './structured-output';
 import { INDEX_FILE_FALLBACK_SLUG } from './constants';
+import { meetingModeGuidance } from './meeting-mode';
 import { renderTopicIndex } from './transcript-index-renderer';
 import { validateTopicIndexContent } from './transcript-index-validator';
 import { resolveTopicFileName, slugifyTopicTitle } from './topic-file-name';
@@ -19,7 +20,7 @@ export const writeIndexStep = createStep({
   inputSchema: branchRunSchema,
   outputSchema: runOutputEntrySchema.array(),
   execute: async ({ mastra, requestContext, inputData }) => {
-    const { files, transcriptContent, omittedTopics, singleTopic, meetingDirectoryName, lineCount, meetingType } = inputData;
+    const { files, transcriptContent, omittedTopics, singleTopic, meetingDirectoryName, lineCount, format, mode } = inputData;
 
     // Single-topic runs — natural or collapsed — produce no index (spec: out
     // of scope), and their recorded omissions stay data, never rendered. The
@@ -47,7 +48,8 @@ export const writeIndexStep = createStep({
 
     const response = await mastra.getAgent('meeting-master').generate(
       renderTemplate(writeIndexPrompt(), {
-        meetingType,
+        format,
+        modeGuidance: meetingModeGuidance(mode),
         topicFiles: JSON.stringify(topicFiles),
         omittedTopics: JSON.stringify(omittedTopics),
         transcriptContent,
