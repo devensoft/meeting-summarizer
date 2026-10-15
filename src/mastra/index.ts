@@ -75,6 +75,9 @@ const workspace = new Workspace({
 // Export the initialized Mastra application bundle.
 // Agents: file-based agents under src/mastra/agents/<name>/ are auto-discovered
 // and registered by the bundler (see src/mastra/agents/meeting-master/).
+// Tools: every non-test .ts under src/mastra/tools/ is bundled as a tool entry
+// and auto-registered on the Mastra instance at boot (Tool exports only), so
+// the web-search tool is wired by convention — nothing is passed by hand here.
 export const mastra = new Mastra({
   workflows: { ingestionWorkflow },
   storage,

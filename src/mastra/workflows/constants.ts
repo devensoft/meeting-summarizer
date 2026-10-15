@@ -1,0 +1,35 @@
+/**
+ * Named constants for the ingestion pipeline — tuning knobs and naming
+ * conventions in one place, so a change is a one-line review. Spec decision:
+ * thresholds and caps never appear as bare literals in step code.
+ *
+ * The transcript-normalization constants (line-number separator, VTT markers,
+ * normalized-file suffix) live with the tool that owns them:
+ * `src/mastra/tools/transcript-normalizer/constants.ts`.
+ */
+
+/** Minimum air-time share the leading topic must hold for topic dominance
+ * (GLOSSARY.md): at or above this share of the transcript's lines, a short,
+ * cohesive multi-topic meeting collapses to a single topic file. */
+export const TOPIC_DOMINANCE_THRESHOLD = 0.8;
+
+/** Maximum meeting duration in seconds for the dominance collapse — the
+ * short-meeting bound. Only enforced when the parsed duration is known;
+ * plain-text input carries null and skips the gate. */
+export const SHORT_MEETING_MAX_SECONDS = 3600;
+
+/** Fallback title for a transcript index whose model-provided title trims to
+ * nothing — keeps the `#` heading and the slugified file name meaningful. */
+export const INDEX_TITLE_FALLBACK = 'Transcript index';
+
+/** Fallback slug for the transcript index file name when the validated index
+ * title contains nothing alphanumeric. Distinct from the topic fallback so an
+ * untitled index never masquerades as a topic file. */
+export const INDEX_FILE_FALLBACK_SLUG = 'index';
+
+/** Maximum number of enriched-concept candidates one topic keeps. Enforced
+ * by code after the proposal call — never by prompt compliance. */
+export const ENRICHED_CONCEPTS_MAX_CANDIDATES = 10;
+
+/** Maximum number of reference links one enriched concept carries. */
+export const ENRICHED_CONCEPTS_MAX_LINKS = 3;

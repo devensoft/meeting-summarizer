@@ -2,48 +2,71 @@ import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { createStep } from '@mastra/core/workflows';
 import { inputFileSchema, transcriptSchema } from './ingestion-wf.schemas';
-import { resolveFromRoot, resolveProjectRoot } from '../../common/utils';
+import { normalizeTranscriptFile } from '../tools/transcript-normalizer/transcript-normalizer-tool';
+import { resolveFromRoot, resolveProjectRoot, resolveWithinDirectory } from '../../common/utils';
+import { slugify } from '../../common/slugify';
 import { readMeetingContext } from '../meeting-context';
-
-/** Kebab-cases a user-supplied series name for use as a directory segment;
- * returns an empty string when nothing usable remains. */
-function slugifySeriesName(seriesName: string | undefined): string {
-  return (seriesName ?? '')
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '');
-}
 
 export const readTranscriptStep = createStep({
   id: 'read-transcript',
-  description: 'Read and validate the uploaded transcript.',
+  description: 'Read the uploaded transcript, normalize it into markdown through the transcript-normalizer tool, and keep the original beside it.',
   inputSchema: inputFileSchema,
   outputSchema: transcriptSchema,
   execute: async ({ mastra, requestContext, inputData: { filePath, seriesName } }) => {
     const projectRoot = resolveProjectRoot(process.cwd());
     const inputFilePath = resolveFromRoot(projectRoot, filePath);
-    const transcriptContent = await readFile(inputFilePath, 'utf8');
+    // Read as bytes, so the original lands beside the normalized copy
+    // byte-identical — Word inputs are binary and must not round-trip
+    // through a text decode.
+    const transcriptContent = await readFile(inputFilePath);
 
     const workspace = mastra.getWorkspace()?.filesystem;
     if (!workspace) {
       throw new Error('Mastra workspace is not configured.');
     }
 
-    const baseName = `${path.basename(inputFilePath, path.extname(inputFilePath))}-${Date.now()}`;
-    const seriesSlug = slugifySeriesName(seriesName);
+    // Filesystem rule: paths built from user/workflow input resolve through
+    // the shared helpers before any workspace call — resolveWithinDirectory,
+    // anchored at the workspace root, rejects anything that would escape it
+    // before anything is written.
+    const workspaceRoot = resolveFromRoot(projectRoot, '.workspace');
+    const withinWorkspace = (workspacePath: string) =>
+      path.relative(workspaceRoot, resolveWithinDirectory(workspaceRoot, workspacePath));
+
+    const inputBaseName = path.basename(inputFilePath);
+    const stem = path.basename(inputFilePath, path.extname(inputFilePath));
+    const baseName = `${stem}-${Date.now()}`;
+    const seriesSlug = slugify(seriesName ?? '');
     // A series name nests the run under meetings/<series>/<transcript>, so the
     // series is visible from the workspace layout alone.
     const outputDirName = seriesSlug ? path.join(seriesSlug, baseName) : baseName;
-    const meetingDirectory = path.join('meetings', outputDirName);
+    const meetingDirectory = withinWorkspace(path.join('meetings', outputDirName));
     await workspace.mkdir(meetingDirectory, { recursive: true });
-    await workspace.writeFile(path.join(meetingDirectory, path.basename(inputFilePath)), transcriptContent);
+    // The original stays untouched; the normalized markdown transcript beside
+    // it is the citation target every generated note refers to — the tool
+    // writes it.
+    await workspace.writeFile(withinWorkspace(path.join(meetingDirectory, inputBaseName)), transcriptContent);
+    const normalized = await normalizeTranscriptFile({
+      filePath: inputFilePath,
+      outputDirectory: path.join(workspaceRoot, meetingDirectory),
+    });
+
+    const meetingContext = readMeetingContext(requestContext);
 
     return {
       meetingDirectoryName: outputDirName,
-      isValidTranscript: transcriptContent.trim().length > 0,
-      transcriptContent,
-      meetingType: readMeetingContext(requestContext).meetingType ?? 'general',
+      isValidTranscript: normalized.isValidTranscript,
+      transcriptContent: normalized.content,
+      durationSeconds: normalized.durationSeconds,
+      lineCount: normalized.lineCount,
+      meetingId: normalized.meetingId,
+      transcriptId: normalized.transcriptId,
+      title: normalized.title,
+      startTimestamp: normalized.startTimestamp,
+      endTimestamp: normalized.endTimestamp,
+      participantCount: normalized.participantCount,
+      normalizedFilePath: normalized.normalizedFilePath,
+      meetingContext: meetingContext.meetingContext ?? null,
     };
   },
 });

@@ -1,6 +1,11 @@
-The provided text is a transcript of a {{meetingType}} meeting. Identify each distinct topic the meeting is about, including topics discussed in multiple non-contiguous sections. Return each unique topic once as a concise label. Do not impose a maximum number of topics.
+The provided text is a meeting transcript, rendered as numbered lines: every transcript line starts with a stable `NN |` prefix followed by the line's text. Identify each distinct topic the meeting is about, including topics discussed in multiple non-contiguous sections. Return each unique topic once as a concise label, together with the line ranges where it is discussed: one range per continuous stretch of the topic's discussion, each range giving the first and last `NN |` line number of the stretch, start and end inclusive. Do not impose a maximum number of topics.
 {{contextBlock}}
-Transcripts often also contain material the meeting is not about: small talk, side anecdotes, scheduling and logistics asides. Omit such a topic only when the transcript itself makes that clear — the discussion is brief, and no decision, question, or insight elsewhere in the transcript depends on it. When uncertain, keep the topic. Every omission must stay on record: return each omitted topic's label under omittedTopics. If every topic would be omitted, omit none.
+Transcripts often also contain material the meeting is not about: small talk, side anecdotes, scheduling and logistics asides. Omit such a topic only when the transcript itself makes that clear — the discussion is brief, and no decision, question, or insight elsewhere in the transcript depends on it. When uncertain, keep the topic. Every omission must stay on record: return each omitted topic's label under omittedTopics, with the line ranges where it appeared. If every topic would be omitted, omit none.
+Finally, judge the meeting's cohesion: return isCohesive=true when the transcript reads as one connected discussion whose topics belong to a single shared concern, and false when it reads as several separate subjects that merely share a meeting.
+
+Also describe the meeting itself:
+- format: exactly one of standup, planning, retrospective, one-on-one, brainstorm, workshop, other — the ritual the meeting follows; use other when none of them fits.
+- modeScores: score the meeting on all three modes between 0 and 1 — status (updates, decisions, and task assignments dominate), discussion (open-ended exploration dominates: threads, trade-offs, and open questions), learning (teaching or knowledge transfer dominates: concepts explained to an audience). The top-scoring mode decides how the notes emphasize decisions, themes, and concepts, so score honestly instead of inflating one mode.
 
 Transcript:
 {{transcriptContent}}
