@@ -1,7 +1,7 @@
 import { ENRICHED_CONCEPTS_MAX_CANDIDATES, ENRICHED_CONCEPTS_MAX_LINKS } from './constants';
 import type { ConceptCandidate, ConceptProposal, ConceptSearchItem, EnrichedConcept } from './ingestion-wf.schemas';
 import type { WebSearchChainResult } from '../tools/web-search/search-chain';
-import { dedupeByTrimmedLowerCaseKey } from '../../common/utils';
+import { dedupeByTrimmedLowerCaseKey } from '../paths';
 
 /**
  * Enriched-concepts determinism (spec: "Enriched Concepts grounding").

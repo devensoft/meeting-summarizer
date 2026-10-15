@@ -2,7 +2,7 @@ import { readFile, stat, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { createTool } from '@mastra/core/tools';
 import { z } from 'zod';
-import { resolveFromRoot, resolveProjectRoot, resolveWithinDirectory } from '../../../common/utils';
+import { resolveFromRoot, resolveProjectRoot, resolveWithinDirectory } from '../../paths';
 import { NORMALIZED_TRANSCRIPT_SUFFIX } from './constants';
 import { normalizeTranscriptSource, type TranscriptFormat } from './transcript-normalizer';
 

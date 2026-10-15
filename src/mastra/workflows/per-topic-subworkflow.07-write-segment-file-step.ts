@@ -3,7 +3,7 @@ import { createStep } from '@mastra/core/workflows';
 import { composedTopicFileSchema, segmentCreatedSchema } from './ingestion-wf.schemas';
 import { renderTopicFile } from './topic-file-renderer';
 import { resolveTopicFileName, slugifyTopicTitle } from './topic-file-name';
-import { resolveFromRoot, resolveProjectRoot, resolveWithinDirectory } from '../../common/utils';
+import { resolveFromRoot, resolveProjectRoot, resolveWithinDirectory } from '../paths';
 
 export const writeSegmentFileStep = createStep({
   id: 'write-segment-file',

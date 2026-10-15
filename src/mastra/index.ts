@@ -9,7 +9,7 @@ import { FileTransport } from '@mastra/loggers/file';
 import { DuckDBStore } from '@mastra/duckdb';
 import { Observability, MastraStorageExporter } from '@mastra/observability';
 import { ingestionWorkflow } from './workflows/ingestion-wf';
-import { resolveProjectRoot } from '../common/utils';
+import { resolveProjectRoot } from './paths';
 
 // Data files must live OUTSIDE src/mastra/public (that directory is copied into
 // the build output and served statically). Anchor to the project root so the
