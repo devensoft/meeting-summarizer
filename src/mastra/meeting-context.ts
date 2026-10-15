@@ -1,7 +1,7 @@
 import type { RequestContext } from '@mastra/core/request-context';
 import { z } from 'zod';
 import type { ClassifiedTopic } from './workflows/ingestion-wf.schemas';
-import { dedupeByTrimmedLowerCaseKey } from './paths';
+import { dedupeByTrimmedLowerCaseKey } from './dedupe';
 
 export const meetingContextSchema = z.object({
   meetingType: z.string().optional(),

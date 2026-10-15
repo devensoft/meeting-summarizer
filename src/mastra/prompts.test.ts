@@ -100,7 +100,7 @@ describe('loadPrompt', () => {
   });
 
   it('rejects file names that escape the calling module directory', () => {
-    expect(() => loadPrompt(callerUrl, '..\\escape.prompt.md')).toThrow(
+    expect(() => loadPrompt(callerUrl, path.join('..', 'escape.prompt.md'))).toThrow(
       'Path must remain within the allowed directory.',
     );
   });

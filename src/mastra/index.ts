@@ -8,7 +8,7 @@ import { createWorkspace } from './workspace';
 
 const projectRoot = resolveProjectRoot(process.cwd());
 const storage = createStorage(projectRoot);
-const observability = createObservability();
+const observability = createObservability(projectRoot);
 const logger = createLogger(projectRoot);
 const workspace = createWorkspace(projectRoot);
 
