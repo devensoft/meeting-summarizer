@@ -6,7 +6,7 @@ import { ingestionWorkflow } from '../../workflows/ingestion-wf';
 // next request) with optional per-run meeting context from the run's
 // RequestContext. The directory name is the registry key.
 export default agentConfig({
-  id: 'matt-meeting-master',
+  id: 'meeting-master',
   name: 'Matt The Meeting Master',
   model: 'zai-coding-plan/glm-5.3-flash',
   workflows: { ingestionWorkflow },
