@@ -2,7 +2,7 @@ import { describe, expect, it, beforeEach, afterEach } from 'bun:test';
 import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { dedupeByTrimmedLowerCaseKey, resolveFromRoot, resolveProjectRoot, resolveWithinDirectory } from './utils';
+import { dedupeByTrimmedLowerCaseKey, resolveFromRoot, resolveProjectRoot, resolveWithinDirectory } from './paths';
 
 describe('resolveProjectRoot', () => {
   let tempRoot: string;

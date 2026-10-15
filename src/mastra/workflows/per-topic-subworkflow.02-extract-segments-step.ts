@@ -1,8 +1,8 @@
 import { createStep } from '@mastra/core/workflows';
 import { extractedTopicSchema, consolidatedTopicSchema, segmentSchema } from './ingestion-wf.schemas';
 import { z } from 'zod';
-import { loadPrompt, renderTemplate } from '../../common/prompts';
-import { jsonOnly } from './structured-output';
+import { loadPrompt, renderTemplate } from '../prompts';
+import { glmStructuredOutput } from '../models/glm';
 
 const extractSegmentsPrompt = loadPrompt(import.meta.url, 'per-topic-subworkflow.02-extract-segments-step.prompt.md');
 
@@ -18,7 +18,7 @@ export const extractSegmentsStep = createStep({
         consolidatedContent: inputData.consolidatedContent,
       }),
       {
-        structuredOutput: jsonOnly(
+        structuredOutput: glmStructuredOutput(
           z.object({ segments: z.array(segmentSchema) }),
           '{"segments":[{"topic":"segment topic","content":"segment text"}]}',
         ),

@@ -9,10 +9,10 @@ import type { z } from 'zod';
  * the models otherwise answer with reasoning prose, or drift into whatever
  * structure their persona suggests (e.g. the meeting-notes sections).
  */
-export function jsonOnly<TSchema extends z.ZodType>(schema: TSchema, shapeExample: string) {
+export function glmStructuredOutput<TSchema extends z.ZodType>(schema: TSchema, shapeExample: string) {
   return {
     schema,
-    jsonPromptInjection: true as const,
+    jsonPromptInjection: 'system' as const,
     instructions: `Your entire reply must be exactly one raw JSON object of this shape: ${shapeExample} Use exactly these keys (case-sensitive) and nothing else. No prose, no markdown, no code fences, no reasoning. Escape newlines inside string values as \\n.`,
   };
 }
