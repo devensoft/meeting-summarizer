@@ -4,7 +4,7 @@ import { createStep } from '@mastra/core/workflows';
 import { inputFileSchema, transcriptSchema } from './ingestion-wf.schemas';
 import { normalizeTranscriptFile } from '../tools/transcript-normalizer/transcript-normalizer-tool';
 import { resolveFromRoot, resolveProjectRoot, resolveWithinDirectory } from '../paths';
-import { slugify } from '../../common/slugify';
+import { slugify } from '../slugify';
 import { readMeetingContext } from '../meeting-context';
 
 export const readTranscriptStep = createStep({

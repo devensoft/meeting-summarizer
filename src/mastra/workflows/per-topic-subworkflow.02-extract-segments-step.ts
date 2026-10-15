@@ -1,7 +1,7 @@
 import { createStep } from '@mastra/core/workflows';
 import { extractedTopicSchema, consolidatedTopicSchema, segmentSchema } from './ingestion-wf.schemas';
 import { z } from 'zod';
-import { loadPrompt, renderTemplate } from '../../common/prompts';
+import { loadPrompt, renderTemplate } from '../prompts';
 import { jsonOnly } from './structured-output';
 
 const extractSegmentsPrompt = loadPrompt(import.meta.url, 'per-topic-subworkflow.02-extract-segments-step.prompt.md');

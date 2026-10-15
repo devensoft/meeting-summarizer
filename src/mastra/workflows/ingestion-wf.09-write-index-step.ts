@@ -2,7 +2,7 @@ import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { createStep } from '@mastra/core/workflows';
 import { branchRunSchema, runOutputEntrySchema, topicIndexContentSchema, type RunOutputEntry } from './ingestion-wf.schemas';
-import { loadPrompt, renderTemplate } from '../../common/prompts';
+import { loadPrompt, renderTemplate } from '../prompts';
 import { resolveProjectRoot, resolveWithinDirectory } from '../paths';
 import { jsonOnly } from './structured-output';
 import { INDEX_FILE_FALLBACK_SLUG } from './constants';

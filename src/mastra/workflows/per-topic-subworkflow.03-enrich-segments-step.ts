@@ -1,7 +1,7 @@
 import { createStep } from '@mastra/core/workflows';
 import { enrichedTopicSchema, extractedTopicSchema, segmentSchema } from './ingestion-wf.schemas';
 import { z } from 'zod';
-import { loadPrompt, renderTemplate } from '../../common/prompts';
+import { loadPrompt, renderTemplate } from '../prompts';
 import { jsonOnly } from './structured-output';
 
 const enrichSegmentsPrompt = loadPrompt(import.meta.url, 'per-topic-subworkflow.03-enrich-segments-step.prompt.md');
