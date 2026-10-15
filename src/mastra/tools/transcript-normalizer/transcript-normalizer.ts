@@ -195,12 +195,14 @@ function participantCountFromCues(cues: VttCue[]): number {
 }
 
 /** The MeetingID a VTT file carries: some exporters stamp every cue with the
- * meeting's GUID as the cue identifier. The rule is deterministic — every
- * GUID-shaped identifier in the file must be the same one, and that value
- * (lowercased) is the MeetingID; any mix, or no GUIDs at all, is null. */
+ * meeting's GUID as (the prefix of) the cue identifier — commonly suffixed
+ * with a `/counter`. The rule is deterministic — the GUID-shaped segment
+ * before the first `/` must be the same on every identifier that has one,
+ * and that value (lowercased) is the MeetingID; any mix, or no GUIDs at all,
+ * is null. */
 export function meetingIdFromCues(cues: VttCue[]): string | null {
   const guids = cues
-    .map(cue => cue.identifier?.trim().toLowerCase() ?? null)
+    .map(cue => cue.identifier?.trim().split('/', 1)[0]?.toLowerCase() ?? null)
     .filter((identifier): identifier is string => identifier !== null && GUID_PATTERN.test(identifier));
   if (guids.length === 0) {
     return null;
@@ -228,15 +230,21 @@ function titleFromFileName(fileName: string): string {
   return stem === '' ? 'Transcript' : stem;
 }
 
-/** Renders the markdown document: YAML frontmatter over the numbered body.
- * Scalars are JSON-encoded — valid YAML double-quoted style for strings,
- * bare for numbers, `null` for nulls. */
+/** Renders the markdown document: YAML frontmatter, then the `#` title, then
+ * the numbered body. Scalars are JSON-encoded — valid YAML double-quoted
+ * style for strings, bare for numbers, `null` for nulls.
+ *
+ * Layout contract: exactly one blank line after the frontmatter, and one
+ * blank line around every body entry — markdown folds consecutive lines into
+ * a single paragraph, so the blank lines are what keep each entry its own. */
 export function renderTranscriptMarkdown(normalized: NormalizedTranscript, metadata: TranscriptFrontmatter): string {
   const field = (name: string, value: string | number | null) => `${name}: ${value === null ? 'null' : JSON.stringify(value)}`;
-  const header = [
+  // Frontmatter property order is part of the contract: TranscriptID first —
+  // it is the one identifier every document carries; MeetingID may be null.
+  const lines = [
     '---',
-    field('meetingId', metadata.meetingId),
     field('transcriptId', metadata.transcriptId),
+    field('meetingId', metadata.meetingId),
     field('title', metadata.title),
     field('startTimestamp', metadata.startTimestamp),
     field('endTimestamp', metadata.endTimestamp),
@@ -244,6 +252,10 @@ export function renderTranscriptMarkdown(normalized: NormalizedTranscript, metad
     field('participantCount', metadata.participantCount),
     '---',
     '',
-  ].join('\n');
-  return normalized.content === '' ? header : `${header}\n${normalized.content}\n`;
+    `# ${metadata.title}`,
+  ];
+  if (normalized.content !== '') {
+    lines.push('', normalized.content.split('\n').join('\n\n'));
+  }
+  return `${lines.join('\n')}\n`;
 }

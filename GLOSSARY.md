@@ -21,7 +21,7 @@ The degree to which one leading topic holds nearly all the air time in a transcr
 _Avoid_: single-theming, collapsing
 
 **Normalized transcript**:
-The markdown rendering of an ingested transcript: YAML frontmatter (MeetingID, TranscriptID, title, start and end timestamps, duration, participant count) over a numbered body — one line per VTT cue with its relative timestamp kept, verbatim lines for plain-text and Word inputs. It is the citation target for every reference and quote in generated notes; the original upload is kept alongside it unmodified.
+The markdown rendering of an ingested transcript: YAML frontmatter (TranscriptID first, then MeetingID, title, start and end timestamps, duration, participant count), a `#` heading carrying the title, and a numbered body — one paragraph per line, VTT cues keeping their relative timestamp, verbatim lines for plain-text and Word inputs. It is the citation target for every reference and quote in generated notes; the original upload is kept alongside it unmodified.
 _Avoid_: cleaned transcript, flattened transcript
 
 **MeetingID**:
