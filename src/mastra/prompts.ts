@@ -1,7 +1,7 @@
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { resolveWithinDirectory } from './utils';
+import { resolveWithinDirectory } from './paths';
 
 const PLACEHOLDER_PATTERN = /\{\{\s*([A-Za-z0-9_]+)\s*\}\}/g;
 const MALFORMED_PLACEHOLDER_PATTERN = /\{\{([^{}]*)\}\}/g;

@@ -6,7 +6,7 @@
  * overwritten.
  */
 
-import { slugify } from '../../common/slugify';
+import { slugify } from '../slugify';
 
 /** Fallback slug when a title contains nothing alphanumeric. */
 const FALLBACK_SLUG = 'topic';
