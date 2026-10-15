@@ -2,7 +2,7 @@ import path from 'node:path';
 import { createStep } from '@mastra/core/workflows';
 import { composedTopicFileSchema, segmentCreatedSchema } from './ingestion-wf.schemas';
 import { renderTopicFile } from './topic-file-renderer';
-import { resolveTopicFileName, slugifyTopicTitle } from './topic-file-name';
+import { resolveTopicFileName } from './topic-file-name';
 import { resolveFromRoot, resolveProjectRoot, resolveWithinDirectory } from '../paths';
 
 export const writeSegmentFileStep = createStep({
@@ -31,7 +31,7 @@ export const writeSegmentFileStep = createStep({
     // The file name comes from code, never the model: the slug of the
     // validated title, suffixed when a same-run file already holds it.
     const takenFileNames = (await workspace.readdir(meetingDirectory)).map((entry) => entry.name);
-    const fileName = resolveTopicFileName(slugifyTopicTitle(inputData.title), takenFileNames);
+    const fileName = resolveTopicFileName(inputData.fileName, takenFileNames);
     const outputFilePath = withinWorkspace(path.join(meetingDirectory, fileName));
 
     await workspace.writeFile(outputFilePath, renderTopicFile(inputData));
