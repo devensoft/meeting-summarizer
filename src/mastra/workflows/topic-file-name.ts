@@ -6,6 +6,8 @@
  * overwritten.
  */
 
+import { slugify } from '../../common/slugify';
+
 /** Fallback slug when a title contains nothing alphanumeric. */
 const FALLBACK_SLUG = 'topic';
 
@@ -13,18 +15,12 @@ const FALLBACK_SLUG = 'topic';
  * before it. */
 const FILE_EXTENSION = '.md';
 
-/** Kebab-cases a distilled title into a file-name slug: lowercase, runs of
- * non-alphanumeric characters collapsed to one dash, no leading or trailing
- * dash; falls back to `fallbackSlug` (default `topic`) when nothing usable
+/** Kebab-cases a distilled title into a file-name slug (see `slugify`),
+ * falling back to `fallbackSlug` (default `topic`) when nothing usable
  * remains. The transcript index passes its own fallback so an untitled index
  * never collides with topic-file naming. */
 export function slugifyTopicTitle(title: string, fallbackSlug: string = FALLBACK_SLUG): string {
-  const slug = title
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '');
-  return slug === '' ? fallbackSlug : slug;
+  return slugify(title, fallbackSlug);
 }
 
 /** Returns the topic file name for `slug` — `slug.md`, or `slug-2.md`,
