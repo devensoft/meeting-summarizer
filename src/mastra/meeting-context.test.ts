@@ -1,7 +1,21 @@
 import { describe, expect, it } from 'bun:test';
+import { readFileSync } from 'node:fs';
 import { RequestContext } from '@mastra/core/request-context';
 import type { ClassifiedTopic, LineRange } from './workflows/ingestion-wf.schemas';
-import { readMeetingContext, reconcileTopics, renderMeetingContextCard } from './meeting-context';
+import { meetingContextSchema, readMeetingContext, reconcileTopics, renderMeetingContextCard } from './meeting-context';
+
+describe('meetingContextSchema', () => {
+  it('accepts the meeting-context keys from the example preset', () => {
+    const examplePresets = JSON.parse(readFileSync(new URL('../../presets.example.json', import.meta.url), 'utf8'));
+    const exampleContext = examplePresets['greenfield-design-sync'];
+
+    expect(meetingContextSchema.parse(exampleContext)).toEqual(exampleContext);
+  });
+
+  it('rejects a non-string meetingType and identifies the field', () => {
+    expect(() => meetingContextSchema.parse({ meetingType: 42 })).toThrow(/meetingType/);
+  });
+});
 
 describe('readMeetingContext', () => {
   it('returns no context when there is no RequestContext', () => {
