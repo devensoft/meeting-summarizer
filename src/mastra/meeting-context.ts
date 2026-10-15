@@ -1,6 +1,6 @@
 import type { RequestContext } from '@mastra/core/request-context';
 import type { ClassifiedTopic } from './workflows/ingestion-wf.schemas';
-import { dedupeByTrimmedLowerCaseKey } from '../common/utils';
+import { dedupeByTrimmedLowerCaseKey } from './paths';
 
 /**
  * Optional per-run background for one meeting series, carried in the run's
