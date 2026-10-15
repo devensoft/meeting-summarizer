@@ -5,7 +5,7 @@ import {
   distilledTopicSchema,
 } from './ingestion-wf.schemas';
 import { loadPrompt, renderTemplate } from '../prompts';
-import { jsonOnly } from './structured-output';
+import { glmStructuredOutput } from '../models/glm';
 import { searchEnrichedConcepts, selectConceptCandidates } from './enriched-concepts';
 import { executeWebSearch } from '../tools/web-search/web-search-tool';
 
@@ -27,7 +27,7 @@ export const proposeEnrichedConceptsStep = createStep({
         transcriptContent: inputData.transcriptContent,
       }),
       {
-        structuredOutput: jsonOnly(
+        structuredOutput: glmStructuredOutput(
           proposedConceptCandidatesSchema,
           '{"concepts":[{"informalMention":"five whys"}]}',
         ),
