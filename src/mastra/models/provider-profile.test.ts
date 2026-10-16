@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'bun:test';
 import { z } from 'zod';
-import { glmStructuredOutput } from './glm';
 import { glmProfile, openAiCompatibleProfile } from './provider-profile';
 
 const schema = z.object({ title: z.string() });
@@ -15,9 +14,11 @@ describe('glmProfile', () => {
     expect(structuredOutput.instructions).toContain(shapeExample);
   });
 
-  it('matches the legacy helper byte for byte', () => {
-    expect(glmProfile.callOptions({ schema, shapeExample }).structuredOutput).toEqual(
-      glmStructuredOutput(schema, shapeExample),
+  it('injects the exact compact raw-JSON instructions', () => {
+    const { structuredOutput } = glmProfile.callOptions({ schema, shapeExample });
+
+    expect(structuredOutput.instructions).toBe(
+      'Your entire reply must be exactly one raw JSON object of this shape: {"title":"Topic title"} Use exactly these keys (case-sensitive) and nothing else. No prose, no markdown, no code fences, no reasoning. Escape newlines inside string values as \\n.',
     );
   });
 
