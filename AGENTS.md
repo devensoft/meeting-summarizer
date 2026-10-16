@@ -37,7 +37,7 @@ src/mastra/
   storage.ts                   LibSQL + DuckDB storage factory
   workspace.ts                 contained local workspace factory
   models/
-    glm.ts                     GLM structured-output options
+    provider-profile.ts        per-provider structured-output + reasoning options
   agents/meeting-master/        file-based agent ("Matt The Meeting Master")
     config.ts                   id, model, RequestContext schema + workflow wiring
     instructions.ts             agent prompt composition
@@ -78,9 +78,9 @@ Facts that aren't visible from any single file:
   the required log-file creation; the entry point logs the resolved root
   through that logger.
 - **GLM structured output is provider-scoped.** Steps that call the GLM agent
-  use `models/glm.ts` and `glmStructuredOutput`, which sets
+  use `glmProfile` in `models/provider-profile.ts`, which sets
   `jsonPromptInjection: 'system'` and the raw-JSON instructions. Keep the
-  router-specific rationale with that helper rather than in a generic workflow
+  router-specific rationale with that profile rather than in a generic workflow
   utility.
 - **Tools auto-wire from `src/mastra/tools/`.** The bundler scans `src/mastra/tools/**` (skipping `*.test.ts`/`*.spec.ts`/`__tests__/`), and at boot every exported `Tool` instance is registered on the Mastra instance by convention — `index.ts` passes no `tools` by hand. Each tool directory holds one `Tool` plus that tool's private internals (not tools): `tools/web-search/` exports `webSearchTool` over the provider chain, and `tools/transcript-normalizer/` exports `transcriptNormalizerTool` — the deterministic `.vtt`/`.txt`/`.doc`/`.docx` → markdown normalizer whose internal `normalizeTranscriptFile` the ingestion workflow's first step calls directly (the web-search pattern: workflows use the internal function, the tool wraps it for models).
 - **Workflow step prompts live in sibling `.prompt.md` files.** Each prompt is
@@ -109,8 +109,8 @@ Facts that aren't visible from any single file:
   each branch's files into `branchRunSchema` with `kind: 'topic'` on every
   entry; the collector flattens the keyed branches into one envelope
   (`flattenBranchRun`). One structured agent call (sibling
-  `ingestion-wf.09-write-index-step.prompt.md` + `glmStructuredOutput` from
-  `src/mastra/models/glm.ts`) reads the written topic files — read back from
+  `ingestion-wf.09-write-index-step.prompt.md` + the provider profile from
+    `src/mastra/models/provider-profile.ts`) reads the written topic files — read back from
   disk via `resolveProjectRoot`/`resolveWithinDirectory`, never from memory —
   the omissions, and the transcript. `transcript-index-validator.ts` applies
   the topic-file citation discipline to the decision log, keeps only recurring
