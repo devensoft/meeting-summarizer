@@ -3,6 +3,7 @@ import { consolidatedTopicSchema, topicContextSchema } from './ingestion-wf.sche
 import { z } from 'zod';
 import { loadPrompt, renderTemplate } from '../prompts';
 import { glmStructuredOutput } from '../models/glm';
+import { perTopicReasoning } from '../models/coarse-low';
 
 const consolidateTopicPrompt = loadPrompt(import.meta.url, 'per-topic-subworkflow.01-consolidate-topic-step.prompt.md');
 
@@ -22,6 +23,7 @@ export const consolidateTopicStep = createStep({
           z.object({ consolidatedContent: z.string() }),
           '{"consolidatedContent":"consolidated passages text"}',
         ),
+        ...perTopicReasoning('consolidate'),
         requestContext,
       },
     );

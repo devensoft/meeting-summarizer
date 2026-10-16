@@ -6,6 +6,7 @@ import {
 } from './ingestion-wf.schemas';
 import { loadPrompt, renderTemplate } from '../prompts';
 import { glmStructuredOutput } from '../models/glm';
+import { perTopicReasoning } from '../models/coarse-low';
 import { searchEnrichedConcepts, selectConceptCandidates } from './enriched-concepts';
 import { executeWebSearch } from '../tools/web-search/web-search-tool';
 
@@ -31,6 +32,7 @@ export const proposeEnrichedConceptsStep = createStep({
           proposedConceptCandidatesSchema,
           '{"concepts":[{"informalMention":"five whys"}]}',
         ),
+        ...perTopicReasoning('propose'),
         requestContext,
       },
     );
