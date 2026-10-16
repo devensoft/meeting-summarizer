@@ -37,7 +37,7 @@ function effortOptions(effort: string | undefined) {
  * with reasoning prose, or drift into whatever structure their persona
  * suggests (e.g. the meeting-notes sections).
  */
-function glmStructuredOutputOptions<TSchema extends z.ZodType>(schema: TSchema, shapeExample: string) {
+function glmPromptInjectionOptions<TSchema extends z.ZodType>(schema: TSchema, shapeExample: string) {
   return {
     schema,
     jsonPromptInjection: 'system' as const,
@@ -49,7 +49,7 @@ export const glmProfile: ProviderProfile = {
   id: 'glm',
   canDisable: false,
   callOptions: ({ schema, shapeExample, intent }) => ({
-    structuredOutput: glmStructuredOutputOptions(schema, shapeExample),
+    structuredOutput: glmPromptInjectionOptions(schema, shapeExample),
     ...effortOptions(intent && GLM_EFFORT[intent]),
   }),
 };
