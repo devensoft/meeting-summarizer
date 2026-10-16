@@ -17,6 +17,7 @@ function topicFile(overrides: Partial<ComposedTopicFile> = {}): ComposedTopicFil
   return {
     topic: 'Launch plan',
     title: 'Launch plan',
+    fileName: 'launch-plan',
     summary: [{ statement: 'Ship Friday', lineReferences: [1], quote: null, quoteVerified: false }],
     keyInsights: [{ statement: 'Budget approved', lineReferences: [2], quote: null, quoteVerified: false }],
     contextualHighlights: [],

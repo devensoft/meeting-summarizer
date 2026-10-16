@@ -14,6 +14,7 @@ import {
   topicRunContextSchema,
 } from './ingestion-wf.schemas';
 import { z } from 'zod';
+import { meetingContextSchema } from '../meeting-context';
 
 // Run-level data (normalized transcript, recorded omissions, single-topic
 // gate) rides into each branch path on the per-topic contexts and comes back
@@ -73,6 +74,7 @@ const ingestionWorkflow = createWorkflow({
   id: 'ingestionWorkflow',
   inputSchema: inputFileSchema,
   outputSchema: runOutputEntrySchema.array(),
+  requestContextSchema: meetingContextSchema,
 })
   .then(readTranscriptStep)
   .then(classifyTopicsStep)

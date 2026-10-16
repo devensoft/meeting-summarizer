@@ -6,7 +6,7 @@ import type {
 } from './ingestion-wf.schemas';
 import { INDEX_TITLE_FALLBACK } from './constants';
 import { stripInlineReferences, validateCitedPoints, validateLineReferences, type CitationTarget } from './citation-validator';
-import { dedupeByTrimmedLowerCaseKey } from '../../common/utils';
+import { dedupeByTrimmedLowerCaseKey } from '../dedupe';
 
 /**
  * Citation and honesty discipline for the transcript index (spec: "Transcript
