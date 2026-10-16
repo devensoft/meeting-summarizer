@@ -5,7 +5,7 @@ import {
   distilledTopicSchema,
 } from './ingestion-wf.schemas';
 import { loadPrompt, renderTemplate } from '../prompts';
-import { glmStructuredOutput } from '../models/glm';
+import { resolveModelSelection } from '../models/model-selection';
 import { searchEnrichedConcepts, selectConceptCandidates } from './enriched-concepts';
 import { executeWebSearch } from '../tools/web-search/web-search-tool';
 
@@ -27,10 +27,11 @@ export const proposeEnrichedConceptsStep = createStep({
         transcriptContent: inputData.transcriptContent,
       }),
       {
-        structuredOutput: glmStructuredOutput(
-          proposedConceptCandidatesSchema,
-          '{"concepts":[{"informalMention":"five whys"}]}',
-        ),
+        ...resolveModelSelection(requestContext).profile.callOptions({
+          schema: proposedConceptCandidatesSchema,
+          shapeExample: '{"concepts":[{"informalMention":"five whys"}]}',
+          intent: 'low',
+        }),
         requestContext,
       },
     );
