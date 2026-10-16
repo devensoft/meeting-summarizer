@@ -4,7 +4,7 @@ import { classifiedTopicSchema, topicResultSchema, transcriptSchema } from './in
 import { readTranscriptStep } from './ingestion-wf.01-read-transcript-step';
 import { loadPrompt, renderTemplate } from '../prompts';
 import { glmStructuredOutput } from '../models/glm';
-import { readMeetingContext, reconcileTopics, renderMeetingContextCard } from '../meeting-context';
+import { appendMeetingMetadata, readMeetingContext, reconcileTopics, renderMeetingContextCard } from '../meeting-context';
 import { resolveTopicDominance } from './topic-dominance';
 import { meetingFormatSchema, meetingModeScoresSchema, meetingModeSchema, resolveMeetingMode } from './meeting-mode';
 
@@ -30,7 +30,7 @@ export const classifyTopicsStep = createStep({
     }
 
     const { meetingDirectoryName } = getStepResult(readTranscriptStep);
-    const contextBlock = renderMeetingContextCard(readMeetingContext(requestContext));
+    const contextBlock = appendMeetingMetadata(renderMeetingContextCard(readMeetingContext(requestContext)), meetingMetadata);
 
     const response = await mastra.getAgent('meeting-master').generate(
       renderTemplate(classifyTopicsPrompt(), { transcriptContent, contextBlock }),

@@ -1,6 +1,6 @@
 import type { RequestContext } from '@mastra/core/request-context';
 import { z } from 'zod';
-import type { ClassifiedTopic } from './workflows/ingestion-wf.schemas';
+import type { ClassifiedTopic, MeetingMetadata } from './workflows/ingestion-wf.schemas';
 import { dedupeByTrimmedLowerCaseKey } from './dedupe';
 
 export const meetingContextSchema = z.object({
@@ -47,6 +47,38 @@ export function renderMeetingContextCard(context: Partial<MeetingContext>): stri
   }
 
   return `Meeting context (background on this meeting series — use it to judge what this meeting is and is not about):\n${background}\n`;
+}
+
+/**
+ * Renders caller-supplied meeting metadata as a factual framing block for
+ * prompts. Empty fields are omitted; returns an empty string when nothing
+ * usable is supplied, so prompts render unchanged without metadata.
+ */
+export function renderMeetingMetadataBlock(metadata: MeetingMetadata | undefined): string {
+  if (!metadata) {
+    return '';
+  }
+
+  const attendees = (metadata.attendees ?? []).map((name) => name.trim()).filter((name) => name.length > 0);
+  const lines = [
+    metadata.title?.trim() && `- Title: ${metadata.title.trim()}`,
+    metadata.date && `- Date: ${metadata.date}`,
+    metadata.time && `- Time: ${metadata.time}`,
+    attendees.length > 0 && `- Attendees: ${attendees.join(', ')}`,
+    metadata.description?.trim() && `- Description: ${metadata.description.trim()}`,
+  ].filter((line): line is string => typeof line === 'string');
+
+  if (lines.length === 0) {
+    return '';
+  }
+
+  return `Meeting metadata (supplied by the caller, not derived from the transcript):\n${lines.join('\n')}\nAttendee names may inform speaker attribution only where the transcript itself supports it. Never invent speakers, decisions, or facts from this metadata.\n`;
+}
+
+/** Appends the metadata block to a context block; the base is returned unchanged when there is no metadata. */
+export function appendMeetingMetadata(contextBlock: string, metadata: MeetingMetadata | undefined): string {
+  const metadataBlock = renderMeetingMetadataBlock(metadata);
+  return metadataBlock === '' ? contextBlock : `${contextBlock}${contextBlock === '' || contextBlock.endsWith('\n') ? '' : '\n'}${metadataBlock}`;
 }
 
 /**

@@ -129,6 +129,9 @@ export const topicContextSchema = z.object({
     .describe(
       'Background on this meeting series, threaded through both branch paths; contextual highlights render only when it exists.',
     ),
+  meetingMetadata: meetingMetadataSchema
+    .optional()
+    .describe('Caller-supplied meeting metadata, threaded through the per-topic pipeline so the distill call can frame the meeting.'),
 });
 export const segmentSchema = z.object({
   topic: z.string(),
@@ -267,7 +270,6 @@ export type RunOutputEntry = z.infer<typeof runOutputEntrySchema>;
 export const topicRunContextSchema = topicContextSchema.extend({
   omittedTopics: z.array(classifiedTopicSchema).optional(),
   singleTopic: z.string().nullable().optional(),
-  meetingMetadata: meetingMetadataSchema.optional(),
 });
 export type TopicRunContext = z.infer<typeof topicRunContextSchema>;
 

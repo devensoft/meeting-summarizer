@@ -6,7 +6,7 @@ import {
 } from './ingestion-wf.schemas';
 import { loadPrompt, renderTemplate } from '../prompts';
 import { glmStructuredOutput } from '../models/glm';
-import { renderMeetingContextCard } from '../meeting-context';
+import { appendMeetingMetadata, renderMeetingContextCard } from '../meeting-context';
 import { meetingModeGuidance } from './meeting-mode';
 import { validateCitedTopic } from './citation-validator';
 import { slugifyTopicTitle } from './topic-file-name';
@@ -26,9 +26,12 @@ export const distillTopicStep = createStep({
         enrichedSegments: JSON.stringify(inputData.enrichedSegments),
         transcriptContent: inputData.transcriptContent,
         modeGuidance: meetingModeGuidance(inputData.mode),
-        contextBlock: renderMeetingContextCard({
-          meetingContext: inputData.meetingContext ?? undefined,
-        }),
+        contextBlock: appendMeetingMetadata(
+          renderMeetingContextCard({
+            meetingContext: inputData.meetingContext ?? undefined,
+          }),
+          inputData.meetingMetadata,
+        ),
       }),
       {
         structuredOutput: glmStructuredOutput(
