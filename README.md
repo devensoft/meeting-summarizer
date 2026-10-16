@@ -80,6 +80,34 @@ bun run dev
 
 Then trigger the `ingestionWorkflow` with a transcript path — `samples/standup-notes.txt` is included for a quick spin.
 
+### Optional meeting metadata
+
+`ingestionWorkflow` input takes a required `filePath`, an optional `seriesName`, and an optional nested `meetingMetadata` object:
+
+```json
+{
+  "filePath": "samples/standup-notes.txt",
+  "seriesName": "weekly-standup",
+  "meetingMetadata": {
+    "date": "2026-10-16",
+    "time": "09:30",
+    "attendees": ["Ada Lovelace", "Grace Hopper"],
+    "title": "Weekly Standup",
+    "description": "Sprint progress and blockers."
+  }
+}
+```
+
+Every `meetingMetadata` field is optional:
+
+- `date` — a real calendar date, `YYYY-MM-DD`.
+- `time` — 24-hour start time, `HH:MM` or `HH:MM:SS`.
+- `attendees` — array of names; entries must be non-blank.
+- `title` — non-blank meeting title.
+- `description` — non-blank short description.
+
+Invalid values (e.g. `2026-02-30`, `25:00`, blank strings) fail input validation. Omitted fields create no placeholders, and entirely absent or empty `meetingMetadata` preserves the previous output: nothing is added to outputs and the index title comes from the model. Supplying some fields while omitting others still changes output for the supplied fields. When supplied, the metadata is also passed to the topic distill step as framing for the meeting. In the [transcript index](#transcript-index) (multi-topic runs only), a supplied `title` replaces the model-generated heading, and `date`, `attendees` (plus `time` and `description`) render as a metadata list under it.
+
 ## Scripts
 
 | Command | What it does |
