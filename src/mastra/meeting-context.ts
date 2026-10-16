@@ -2,10 +2,21 @@ import type { RequestContext } from '@mastra/core/request-context';
 import { z } from 'zod';
 import type { ClassifiedTopic } from './workflows/ingestion-wf.schemas';
 import { dedupeByTrimmedLowerCaseKey } from './dedupe';
+import { modelStringProblem } from './models/model-selection';
 
 export const meetingContextSchema = z.object({
   meetingType: z.string().optional(),
   meetingContext: z.string().optional(),
+  // Optional per-run override of the MEETING_MODEL env var / default model.
+  model: z
+    .string()
+    .superRefine((value, ctx) => {
+      const problem = modelStringProblem(value);
+      if (problem) {
+        ctx.addIssue({ code: 'custom', message: problem });
+      }
+    })
+    .optional(),
 });
 
 /**
