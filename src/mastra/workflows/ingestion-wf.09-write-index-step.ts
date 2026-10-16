@@ -7,7 +7,8 @@ import { resolveProjectRoot, resolveWithinDirectory } from '../paths';
 import { glmStructuredOutput } from '../models/glm';
 import { INDEX_FILE_FALLBACK_SLUG } from './constants';
 import { meetingModeGuidance } from './meeting-mode';
-import { renderTopicIndex } from './transcript-index-renderer';
+import { renderTopicIndex, resolveIndexTitle } from './transcript-index-renderer';
+import { renderMeetingMetadataSection } from '../meeting-context';
 import { validateTopicIndexContent } from './transcript-index-validator';
 import { resolveTopicFileName, slugifyTopicTitle } from './topic-file-name';
 
@@ -20,7 +21,7 @@ export const writeIndexStep = createStep({
   inputSchema: branchRunSchema,
   outputSchema: runOutputEntrySchema.array(),
   execute: async ({ mastra, requestContext, inputData }) => {
-    const { files, transcriptContent, omittedTopics, singleTopic, meetingDirectoryName, lineCount, format, mode } = inputData;
+    const { files, transcriptContent, omittedTopics, singleTopic, meetingDirectoryName, lineCount, format, mode, meetingMetadata } = inputData;
 
     // Single-topic runs — natural or collapsed — produce no index (spec: out
     // of scope), and their recorded omissions stay data, never rendered. The
@@ -50,6 +51,7 @@ export const writeIndexStep = createStep({
       renderTemplate(writeIndexPrompt(), {
         format,
         modeGuidance: meetingModeGuidance(mode),
+        metadataSection: renderMeetingMetadataSection(meetingMetadata),
         topicFiles: JSON.stringify(topicFiles),
         omittedTopics: JSON.stringify(omittedTopics),
         transcriptContent,
@@ -64,13 +66,14 @@ export const writeIndexStep = createStep({
     );
 
     const validatedIndex = validateTopicIndexContent(response.object, { lineCount, transcriptContent }, topicFileNames);
-    const markdown = renderTopicIndex({ index: validatedIndex, topicFileNames, omittedTopics });
+    const indexTitle = resolveIndexTitle(validatedIndex.title, meetingMetadata);
+    const markdown = renderTopicIndex({ index: validatedIndex, topicFileNames, omittedTopics, meetingMetadata });
 
     const meetingDirectory = path.join('meetings', meetingDirectoryName);
     // The file name comes from code, never the model: the slug of the
     // validated title, suffixed when a same-run file already holds it.
     const takenFileNames = (await workspace.readdir(meetingDirectory)).map((entry) => entry.name);
-    const fileName = resolveTopicFileName(slugifyTopicTitle(validatedIndex.title, INDEX_FILE_FALLBACK_SLUG), takenFileNames);
+    const fileName = resolveTopicFileName(slugifyTopicTitle(indexTitle, INDEX_FILE_FALLBACK_SLUG), takenFileNames);
     const outputFilePath = path.join(meetingDirectory, fileName);
 
     await workspace.writeFile(outputFilePath, markdown);
@@ -78,7 +81,7 @@ export const writeIndexStep = createStep({
 
     const indexEntry: RunOutputEntry = {
       kind: 'index',
-      topic: validatedIndex.title,
+      topic: indexTitle,
       filePath: path.join('.workspace', outputFilePath),
       fileSize: size,
       isSegment: false,

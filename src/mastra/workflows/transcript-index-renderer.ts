@@ -1,4 +1,4 @@
-import type { ClassifiedTopic, ValidatedTopicIndex, ValidatedPoint } from './ingestion-wf.schemas';
+import type { ClassifiedTopic, MeetingMetadata, ValidatedTopicIndex, ValidatedPoint } from './ingestion-wf.schemas';
 import { renderCitedPointBody } from './topic-file-renderer';
 
 /**
@@ -27,13 +27,38 @@ export interface TopicIndexDocument {
   index: ValidatedTopicIndex;
   topicFileNames: string[];
   omittedTopics: ClassifiedTopic[];
+  meetingMetadata?: MeetingMetadata;
+}
+
+/** The index title: a caller-supplied title wins over the model's. */
+export function resolveIndexTitle(modelTitle: string, metadata: MeetingMetadata | undefined): string {
+  return metadata?.title?.trim() || modelTitle;
+}
+
+/** Caller-supplied facts rendered under the title; empty when none apply, so
+ * runs without metadata render unchanged. The title is already the heading. */
+function renderMetadataLines(metadata: MeetingMetadata | undefined): string[] {
+  if (!metadata) {
+    return [];
+  }
+
+  const attendees = (metadata.attendees ?? []).map((name) => name.trim()).filter((name) => name.length > 0);
+  const lines = [
+    metadata.date && `- **Date:** ${metadata.date}`,
+    metadata.time && `- **Time:** ${metadata.time}`,
+    attendees.length > 0 && `- **Attendees:** ${attendees.join(', ')}`,
+    metadata.description?.trim() && `- **Description:** ${metadata.description.trim()}`,
+  ].filter((line): line is string => typeof line === 'string');
+
+  return lines.length === 0 ? [] : ['', ...lines];
 }
 
 /** Renders the full markdown document for one multi-topic meeting's
  * transcript index. */
-export function renderTopicIndex({ index, topicFileNames, omittedTopics }: TopicIndexDocument): string {
+export function renderTopicIndex({ index, topicFileNames, omittedTopics, meetingMetadata }: TopicIndexDocument): string {
   const sections = [
-    `# ${index.title}`,
+    `# ${resolveIndexTitle(index.title, meetingMetadata)}`,
+    ...renderMetadataLines(meetingMetadata),
     renderSection('Executive Summary', index.executiveSummary === '' ? [] : [index.executiveSummary]),
     renderSection('Topic Index', topicFileNames.map((fileName) => `- [[${fileName}]]`)),
     renderSection('Recurring Themes', index.recurringThemes.map(renderRecurringTheme)),

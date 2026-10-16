@@ -4,7 +4,7 @@ import { classifiedTopicSchema, topicResultSchema, transcriptSchema } from './in
 import { readTranscriptStep } from './ingestion-wf.01-read-transcript-step';
 import { loadPrompt, renderTemplate } from '../prompts';
 import { glmStructuredOutput } from '../models/glm';
-import { readMeetingContext, reconcileTopics, renderMeetingContextCard } from '../meeting-context';
+import { appendMeetingMetadata, readMeetingContext, reconcileTopics, renderMeetingContextCard } from '../meeting-context';
 import { resolveTopicDominance } from './topic-dominance';
 import { meetingFormatSchema, meetingModeScoresSchema, meetingModeSchema, resolveMeetingMode } from './meeting-mode';
 
@@ -24,13 +24,13 @@ export const classifyTopicsStep = createStep({
     'Identify unique topics and topic omissions with their transcript line ranges, judge cohesion, resolve topic dominance, and judge the meeting format and mode.',
   inputSchema: transcriptSchema,
   outputSchema: topicResultSchema,
-  execute: async ({ inputData: { transcriptContent, isValidTranscript, meetingContext, durationSeconds, lineCount }, mastra, getStepResult, requestContext }) => {
+  execute: async ({ inputData: { transcriptContent, isValidTranscript, meetingContext, durationSeconds, lineCount, meetingMetadata }, mastra, getStepResult, requestContext }) => {
     if (!isValidTranscript) {
       throw new Error('Invalid transcript');
     }
 
     const { meetingDirectoryName } = getStepResult(readTranscriptStep);
-    const contextBlock = renderMeetingContextCard(readMeetingContext(requestContext));
+    const contextBlock = appendMeetingMetadata(renderMeetingContextCard(readMeetingContext(requestContext)), meetingMetadata);
 
     const response = await mastra.getAgent('meeting-master').generate(
       renderTemplate(classifyTopicsPrompt(), { transcriptContent, contextBlock }),
@@ -66,6 +66,7 @@ export const classifyTopicsStep = createStep({
       modeScores: response.object.modeScores,
       mode,
       meetingContext,
+      ...(meetingMetadata !== undefined && { meetingMetadata }),
     };
   },
 });

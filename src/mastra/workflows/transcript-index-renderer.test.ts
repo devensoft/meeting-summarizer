@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'bun:test';
-import { renderTopicIndex } from './transcript-index-renderer';
+import { readFileSync } from 'node:fs';
+import { renderTemplate } from '../prompts';
+import { renderMeetingMetadataSection } from '../meeting-context';
+import { slugifyTopicTitle } from './topic-file-name';
+import { renderTopicIndex, resolveIndexTitle } from './transcript-index-renderer';
 import type { ClassifiedTopic, ValidatedTopicIndex } from './ingestion-wf.schemas';
 
 function index(overrides: Partial<ValidatedTopicIndex> = {}): ValidatedTopicIndex {
@@ -184,5 +188,68 @@ describe('renderTopicIndex', () => {
     expect(markdown).toContain('## Action Items\n\n_None recorded._');
     expect(markdown).toContain('## Unresolved Items\n\n_None recorded._');
     expect(markdown).toContain('## Topic Omissions\n\n_None recorded._');
+  });
+});
+
+describe('renderTopicIndex with meeting metadata', () => {
+  it('renders identical output for absent or empty metadata', () => {
+    const baseline = renderTopicIndex({ index: index(), topicFileNames, omittedTopics });
+    expect(renderTopicIndex({ index: index(), topicFileNames, omittedTopics, meetingMetadata: {} })).toBe(baseline);
+    expect(renderTopicIndex({ index: index(), topicFileNames, omittedTopics, meetingMetadata: { attendees: [] } })).toBe(baseline);
+  });
+
+  it('uses the supplied title as the heading and lists date, time, attendees, description', () => {
+    const markdown = renderTopicIndex({
+      index: index(),
+      topicFileNames,
+      omittedTopics,
+      meetingMetadata: {
+        title: 'Launch Review',
+        date: '2026-03-01',
+        time: '14:30',
+        attendees: ['Dana', 'Ari'],
+        description: 'Quarterly launch check',
+      },
+    });
+
+    expect(markdown.startsWith('# Launch Review\n\n- **Date:** 2026-03-01\n- **Time:** 14:30\n- **Attendees:** Dana, Ari\n- **Description:** Quarterly launch check\n\n## Executive Summary')).toBe(true);
+    expect(markdown).not.toContain('Q3 product sync');
+  });
+
+  it('keeps the model title when only other metadata is supplied', () => {
+    const markdown = renderTopicIndex({ index: index(), topicFileNames, omittedTopics, meetingMetadata: { date: '2026-03-01' } });
+    expect(markdown.startsWith('# Q3 product sync\n\n- **Date:** 2026-03-01\n\n## Executive Summary')).toBe(true);
+    expect(markdown).not.toContain('Attendees');
+  });
+});
+
+describe('resolveIndexTitle', () => {
+  it('prefers the trimmed user title and drives the file name slug', () => {
+    expect(resolveIndexTitle('Model title', { title: '  Launch Review ' })).toBe('Launch Review');
+    expect(resolveIndexTitle('Model title', undefined)).toBe('Model title');
+    expect(slugifyTopicTitle(resolveIndexTitle('Model title', { title: 'Launch Review' }), 'index')).toBe('launch-review');
+  });
+});
+
+describe('write-index prompt metadata', () => {
+  const template = readFileSync(new URL('./ingestion-wf.09-write-index-step.prompt.md', import.meta.url), 'utf8').replace(/\r\n/g, '\n');
+  const variables = { format: 'standup', modeGuidance: 'G', topicFiles: '[]', omittedTopics: '[]', transcriptContent: '1 | hi' };
+
+  it('renders exactly as before without metadata', () => {
+    const rendered = renderTemplate(template, { ...variables, metadataSection: renderMeetingMetadataSection(undefined) });
+    expect(rendered).toContain('Notes emphasis for this kind of meeting: G\n\nFill every field');
+    expect(rendered).not.toContain('Meeting metadata');
+  });
+
+  it('includes metadata and the attribution caveat when present', () => {
+    const rendered = renderTemplate(template, {
+      ...variables,
+      metadataSection: renderMeetingMetadataSection({ title: 'Launch Review', date: '2026-03-01', attendees: ['Dana'] }),
+    });
+    expect(rendered).toContain('- Title: Launch Review');
+    expect(rendered).toContain('- Date: 2026-03-01');
+    expect(rendered).toContain('- Attendees: Dana');
+    expect(rendered).toContain('only where the transcript itself supports it');
+    expect(rendered).toContain('G\n\nMeeting metadata');
   });
 });
