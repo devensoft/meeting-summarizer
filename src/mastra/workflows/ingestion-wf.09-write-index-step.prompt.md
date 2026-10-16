@@ -12,7 +12,7 @@ Transcript, rendered as numbered lines — every line starts with a stable `NN |
 The omitted topics are listed only so your summary and themes account for everything the meeting contained; they are rendered from that data, so do not return them. The wikilinked topic index is also built by code from the run's actual files, so return no field for it.
 
 Notes emphasis for this kind of meeting: {{modeGuidance}}
-
+{{metadataSection}}
 Fill every field of the JSON response:
 
 - title: a descriptive title for the whole meeting — not a list of its topics.

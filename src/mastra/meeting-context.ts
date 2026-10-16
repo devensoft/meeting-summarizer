@@ -75,6 +75,12 @@ export function renderMeetingMetadataBlock(metadata: MeetingMetadata | undefined
   return `Meeting metadata (supplied by the caller, not derived from the transcript):\n${lines.join('\n')}\nAttendee names may inform speaker attribution only where the transcript itself supports it. Never invent speakers, decisions, or facts from this metadata.\n`;
 }
 
+/** Prompt section for templates with a dedicated `{{metadataSection}}` slot: empty without metadata, otherwise a leading blank line plus the block. */
+export function renderMeetingMetadataSection(metadata: MeetingMetadata | undefined): string {
+  const block = renderMeetingMetadataBlock(metadata);
+  return block === '' ? '' : `\n${block}`;
+}
+
 /** Appends the metadata block to a context block; the base is returned unchanged when there is no metadata. */
 export function appendMeetingMetadata(contextBlock: string, metadata: MeetingMetadata | undefined): string {
   const metadataBlock = renderMeetingMetadataBlock(metadata);
