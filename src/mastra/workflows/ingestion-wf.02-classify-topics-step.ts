@@ -3,7 +3,7 @@ import { createStep } from '@mastra/core/workflows';
 import { classifiedTopicSchema, topicResultSchema, transcriptSchema } from './ingestion-wf.schemas';
 import { readTranscriptStep } from './ingestion-wf.01-read-transcript-step';
 import { loadPrompt, renderTemplate } from '../prompts';
-import { glmStructuredOutput } from '../models/glm';
+import { activeProviderProfile } from '../models/provider-profile';
 import { readMeetingContext, reconcileTopics, renderMeetingContextCard } from '../meeting-context';
 import { resolveTopicDominance } from './topic-dominance';
 import { meetingFormatSchema, meetingModeScoresSchema, meetingModeSchema, resolveMeetingMode } from './meeting-mode';
@@ -35,10 +35,12 @@ export const classifyTopicsStep = createStep({
     const response = await mastra.getAgent('meeting-master').generate(
       renderTemplate(classifyTopicsPrompt(), { transcriptContent, contextBlock }),
       {
-        structuredOutput: glmStructuredOutput(
-          classifierOutputSchema,
-          '{"topics":[{"topic":"Topic label","lineRanges":[{"startLine":1,"endLine":12}]}],"omittedTopics":[{"topic":"Off-topic tangent label","lineRanges":[{"startLine":40,"endLine":45}]}],"isCohesive":true,"format":"planning","modeScores":{"status":0.6,"discussion":0.3,"learning":0.1}}',
-        ),
+        ...activeProviderProfile.callOptions({
+          schema: classifierOutputSchema,
+          shapeExample:
+            '{"topics":[{"topic":"Topic label","lineRanges":[{"startLine":1,"endLine":12}]}],"omittedTopics":[{"topic":"Off-topic tangent label","lineRanges":[{"startLine":40,"endLine":45}]}],"isCohesive":true,"format":"planning","modeScores":{"status":0.6,"discussion":0.3,"learning":0.1}}',
+          intent: 'high',
+        }),
         requestContext,
       },
     );
