@@ -1,6 +1,17 @@
 import type { z } from 'zod';
 
 /**
+ * Per-call `providerOptions` that make the router's OpenAI-compatible chat
+ * model send `reasoning_effort` to the z.ai endpoint. The router builds the
+ * model with `@ai-sdk/openai-compatible`, which maps the `reasoningEffort`
+ * option under the `openaiCompatible` key to the `reasoning_effort` body
+ * field. (`modelSettings.reasoning` is a no-op for these V2/V3 models.)
+ */
+export function glmReasoningEffort(effort: 'low' | 'medium' | 'high') {
+  return { openaiCompatible: { reasoningEffort: effort } };
+}
+
+/**
  * Structured-output options tuned for GLM reasoning models on the z.ai router.
  *
  * Native provider JSON mode (`response_format`) is unreliable through this
