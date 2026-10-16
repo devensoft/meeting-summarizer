@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'bun:test';
 import { multipleTopicsBranchRun, singleTopicBranchRun, toMultipleTopicContexts, toSingleTopicContext } from './branch-run';
-import type { SegmentCreated, TopicResult } from './ingestion-wf.schemas';
+import type { MeetingMetadata, SegmentCreated, TopicResult } from './ingestion-wf.schemas';
 
 const topicResult: TopicResult = {
   transcriptContent: '1 | Launch plan\n2 | Budget review\n3 | Small talk',
@@ -96,5 +96,30 @@ describe('multipleTopicsBranchRun', () => {
     expect(run.lineCount).toBe(3);
     expect(run.format).toBe('planning');
     expect(run.mode).toBe('status');
+  });
+});
+
+describe('meeting metadata propagation', () => {
+  const meetingMetadata: MeetingMetadata = { date: '2026-03-01', attendees: ['Dana', 'Ari'], title: 'Q3 sync' };
+  const withMetadata: TopicResult = { ...topicResult, meetingMetadata };
+
+  it('carries metadata intact through the single-topic path', () => {
+    const context = toSingleTopicContext({ ...withMetadata, singleTopic: 'Launch plan' });
+    expect(context.meetingMetadata).toEqual(meetingMetadata);
+    expect(singleTopicBranchRun(context, { ...file, isSegment: false }).meetingMetadata).toEqual(meetingMetadata);
+  });
+
+  it('carries metadata intact through the multi-topic path', () => {
+    const contexts = toMultipleTopicContexts(withMetadata);
+    expect(contexts.every((context) => context.meetingMetadata === meetingMetadata)).toBe(true);
+    expect(multipleTopicsBranchRun(contexts, [file]).meetingMetadata).toEqual(meetingMetadata);
+  });
+
+  it('keeps metadata absent when the run has none', () => {
+    const contexts = toMultipleTopicContexts(topicResult);
+    expect('meetingMetadata' in contexts[0]!).toBe(false);
+    expect('meetingMetadata' in multipleTopicsBranchRun(contexts, [file])).toBe(false);
+    const single = toSingleTopicContext({ ...topicResult, singleTopic: 'Launch plan' });
+    expect('meetingMetadata' in singleTopicBranchRun(single, file)).toBe(false);
   });
 });

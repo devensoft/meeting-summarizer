@@ -1,7 +1,30 @@
 import { z } from 'zod';
 import { meetingFormatSchema, meetingModeSchema, meetingModeScoresSchema } from './meeting-mode';
 
+const metadataTextSchema = z.string().trim().min(1);
+
+/** Optional caller-supplied facts about the meeting. Every field is optional;
+ * an absent object stays absent all the way through the run. */
+export const meetingMetadataSchema = z.object({
+  date: z.iso
+    .date('Expected a real YYYY-MM-DD calendar date.')
+    .optional()
+    .describe('Meeting date as YYYY-MM-DD.'),
+  time: z
+    .string()
+    .regex(/^([01]\d|2[0-3]):[0-5]\d(:[0-5]\d)?$/, 'Expected a 24-hour HH:MM or HH:MM:SS time.')
+    .optional()
+    .describe('Meeting start time as 24-hour HH:MM or HH:MM:SS.'),
+  attendees: z.array(metadataTextSchema).optional().describe('Names of the meeting attendees; entries must be non-blank.'),
+  title: metadataTextSchema.optional().describe('Meeting title.'),
+  description: metadataTextSchema.optional().describe('Short description of the meeting.'),
+});
+export type MeetingMetadata = z.infer<typeof meetingMetadataSchema>;
+
 export const inputFileSchema = z.object({
+  meetingMetadata: meetingMetadataSchema
+    .optional()
+    .describe('Optional meeting metadata (date, time, attendees, title, description); each field is optional.'),
   filePath: z
     .string()
     .min(1)
@@ -54,6 +77,7 @@ export const transcriptSchema = z.object({
     .describe(
       "Free-form background on this meeting series, seeded from the run's RequestContext preset; null when none was provided.",
     ),
+  meetingMetadata: meetingMetadataSchema.optional(),
 });
 export const lineRangeSchema = z.object({
   startLine: z.number().int().min(1).describe('First numbered line of the range in the normalized transcript (inclusive).'),
@@ -88,6 +112,7 @@ export const topicResultSchema = z.object({
     'The primary meeting mode: the highest-scoring mode, resolved in code with a fixed tie-break. Drives prompt emphasis only.',
   ),
   meetingContext: z.string().nullable(),
+  meetingMetadata: meetingMetadataSchema.optional(),
 });
 export const topicContextSchema = z.object({
   transcriptContent: z.string(),
@@ -242,6 +267,7 @@ export type RunOutputEntry = z.infer<typeof runOutputEntrySchema>;
 export const topicRunContextSchema = topicContextSchema.extend({
   omittedTopics: z.array(classifiedTopicSchema).optional(),
   singleTopic: z.string().nullable().optional(),
+  meetingMetadata: meetingMetadataSchema.optional(),
 });
 export type TopicRunContext = z.infer<typeof topicRunContextSchema>;
 
@@ -258,6 +284,7 @@ export const branchRunSchema = z.object({
   lineCount: z.number().int().nonnegative(),
   format: meetingFormatSchema,
   mode: meetingModeSchema,
+  meetingMetadata: meetingMetadataSchema.optional(),
 });
 export type BranchRun = z.infer<typeof branchRunSchema>;
 

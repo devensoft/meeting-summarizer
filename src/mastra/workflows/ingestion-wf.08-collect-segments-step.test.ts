@@ -41,4 +41,10 @@ describe('flattenBranchRun', () => {
   it('throws when neither branch produced a result', () => {
     expect(() => flattenBranchRun({})).toThrow();
   });
+
+  it('keeps meeting metadata intact on the flattened run', () => {
+    const meetingMetadata = { title: 'Sync', attendees: ['Dana'] };
+    expect(flattenBranchRun({ 'multiple-topics-path': { ...multiTopicRun, meetingMetadata } }).meetingMetadata).toEqual(meetingMetadata);
+    expect('meetingMetadata' in flattenBranchRun({ 'single-topic-path': singleTopicRun })).toBe(false);
+  });
 });

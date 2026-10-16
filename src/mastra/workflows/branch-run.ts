@@ -29,6 +29,7 @@ function toTopicRunContext(input: TopicResult, topic: string, isSegment: boolean
     meetingContext: input.meetingContext,
     omittedTopics: input.omittedTopics,
     singleTopic: input.singleTopic,
+    ...(input.meetingMetadata !== undefined && { meetingMetadata: input.meetingMetadata }),
   };
 }
 
@@ -45,6 +46,7 @@ function toBranchRun(context: TopicRunContext, files: SegmentCreated[]): BranchR
     lineCount: context.lineCount,
     format: context.format,
     mode: context.mode,
+    ...(context.meetingMetadata !== undefined && { meetingMetadata: context.meetingMetadata }),
   };
 }
 

@@ -12,7 +12,7 @@ export const readTranscriptStep = createStep({
   description: 'Read the uploaded transcript, normalize it into markdown through the transcript-normalizer tool, and keep the original beside it.',
   inputSchema: inputFileSchema,
   outputSchema: transcriptSchema,
-  execute: async ({ mastra, requestContext, inputData: { filePath, seriesName } }) => {
+  execute: async ({ mastra, requestContext, inputData: { filePath, seriesName, meetingMetadata } }) => {
     const projectRoot = resolveProjectRoot(process.cwd());
     const inputFilePath = resolveFromRoot(projectRoot, filePath);
     // Read as bytes, so the original lands beside the normalized copy
@@ -67,6 +67,7 @@ export const readTranscriptStep = createStep({
       participantCount: normalized.participantCount,
       normalizedFilePath: normalized.normalizedFilePath,
       meetingContext: meetingContext.meetingContext ?? null,
+      ...(meetingMetadata !== undefined && { meetingMetadata }),
     };
   },
 });
