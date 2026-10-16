@@ -1,6 +1,7 @@
 import { agentConfig } from '@mastra/core/agent';
 import { ingestionWorkflow } from '../../workflows/ingestion-wf';
 import { meetingContextSchema } from '../../meeting-context';
+import { resolveModelSelection } from '../../models/model-selection';
 
 // File-based agent: instructions.ts composes the static persona in
 // ./instructions.base.md (hot-reloaded by `mastra dev` — edits apply on the
@@ -9,7 +10,7 @@ import { meetingContextSchema } from '../../meeting-context';
 export default agentConfig({
   id: 'meeting-master',
   name: 'Matt The Meeting Master',
-  model: 'zai-coding-plan/glm-5.3-flash',
+  model: ({ requestContext }) => resolveModelSelection(requestContext).model,
   workflows: { ingestionWorkflow },
   requestContextSchema: meetingContextSchema,
 });

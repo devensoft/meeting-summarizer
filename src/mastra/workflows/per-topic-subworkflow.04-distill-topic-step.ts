@@ -5,7 +5,7 @@ import {
   enrichedTopicSchema,
 } from './ingestion-wf.schemas';
 import { loadPrompt, renderTemplate } from '../prompts';
-import { glmStructuredOutput } from '../models/glm';
+import { resolveModelSelection } from '../models/model-selection';
 import { renderMeetingContextCard } from '../meeting-context';
 import { meetingModeGuidance } from './meeting-mode';
 import { validateCitedTopic } from './citation-validator';
@@ -31,10 +31,12 @@ export const distillTopicStep = createStep({
         }),
       }),
       {
-        structuredOutput: glmStructuredOutput(
-          citedTopicContentSchema,
-          '{"title":"Topic title","summary":[{"statement":"What was discussed","lineReferences":[3,4],"quote":null}],"keyInsights":[{"statement":"The decision taken","lineReferences":[7],"quote":"exact words from line 7"}],"contextualHighlights":[{"statement":"Ties this discussion to the series background","lineReferences":[12],"quote":null}]}',
-        ),
+        ...resolveModelSelection(requestContext).profile.callOptions({
+          schema: citedTopicContentSchema,
+          shapeExample:
+            '{"title":"Topic title","summary":[{"statement":"What was discussed","lineReferences":[3,4],"quote":null}],"keyInsights":[{"statement":"The decision taken","lineReferences":[7],"quote":"exact words from line 7"}],"contextualHighlights":[{"statement":"Ties this discussion to the series background","lineReferences":[12],"quote":null}]}',
+          intent: 'low',
+        }),
         requestContext,
       },
     );

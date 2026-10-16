@@ -62,6 +62,3 @@ export const openAiCompatibleProfile: ProviderProfile = {
     ...effortOptions(intent && GENERIC_EFFORT[intent]),
   }),
 };
-
-/** The profile the meeting-master agent's model uses today. */
-export const activeProviderProfile: ProviderProfile = glmProfile;

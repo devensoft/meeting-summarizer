@@ -2,7 +2,7 @@ import { createStep } from '@mastra/core/workflows';
 import { consolidatedTopicSchema, topicContextSchema } from './ingestion-wf.schemas';
 import { z } from 'zod';
 import { loadPrompt, renderTemplate } from '../prompts';
-import { glmStructuredOutput } from '../models/glm';
+import { resolveModelSelection } from '../models/model-selection';
 
 const consolidateTopicPrompt = loadPrompt(import.meta.url, 'per-topic-subworkflow.01-consolidate-topic-step.prompt.md');
 
@@ -18,10 +18,11 @@ export const consolidateTopicStep = createStep({
         transcriptContent: inputData.transcriptContent,
       }),
       {
-        structuredOutput: glmStructuredOutput(
-          z.object({ consolidatedContent: z.string() }),
-          '{"consolidatedContent":"consolidated passages text"}',
-        ),
+        ...resolveModelSelection(requestContext).profile.callOptions({
+          schema: z.object({ consolidatedContent: z.string() }),
+          shapeExample: '{"consolidatedContent":"consolidated passages text"}',
+          intent: 'low',
+        }),
         requestContext,
       },
     );
