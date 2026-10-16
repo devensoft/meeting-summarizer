@@ -5,7 +5,8 @@ import {
   proposedConceptsSchema,
 } from './ingestion-wf.schemas';
 import { loadPrompt, renderTemplate } from '../prompts';
-import { glmReasoningEffort, glmStructuredOutput } from '../models/glm';
+import { glmStructuredOutput } from '../models/glm';
+import { perTopicReasoning } from '../models/coarse-low';
 import { resolveEnrichedConcepts } from './enriched-concepts';
 
 const composeConceptsPrompt = loadPrompt(
@@ -35,7 +36,7 @@ export const composeEnrichedConceptsStep = createStep({
           composedConceptsSchema,
           '{"concepts":[{"informalMention":"five whys","formalFoundation":"Root cause analysis","blurb":"Five whys is the root-cause-analysis practice of asking why repeatedly until the underlying cause surfaces.","links":[{"title":"Five whys — Wikipedia","url":"https://en.wikipedia.org/wiki/Five_whys"}]}]}',
         ),
-        providerOptions: glmReasoningEffort('low'),
+        ...perTopicReasoning('compose'),
         requestContext,
       },
     );

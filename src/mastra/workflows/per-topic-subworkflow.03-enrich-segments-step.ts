@@ -3,6 +3,7 @@ import { enrichedTopicSchema, extractedTopicSchema, segmentSchema } from './inge
 import { z } from 'zod';
 import { loadPrompt, renderTemplate } from '../prompts';
 import { glmStructuredOutput } from '../models/glm';
+import { perTopicReasoning } from '../models/coarse-low';
 
 const enrichSegmentsPrompt = loadPrompt(import.meta.url, 'per-topic-subworkflow.03-enrich-segments-step.prompt.md');
 
@@ -19,6 +20,7 @@ export const enrichSegmentsStep = createStep({
           z.object({ enrichedSegments: z.array(segmentSchema) }),
           '{"enrichedSegments":[{"topic":"segment topic","content":"enriched segment text"}]}',
         ),
+        ...perTopicReasoning('enrich'),
         requestContext,
       },
     );
